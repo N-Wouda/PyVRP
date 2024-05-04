@@ -261,7 +261,11 @@ def main():
 
     msg = "Algorithm to use. One of ['hgs', 'ils']."
     parser.add_argument(
-        "--algorithm", type=str, choices=["hgs", "ils"], help=msg
+        "--algorithm",
+        type=str,
+        default="hgs",
+        choices=["hgs", "ils"],
+        help=msg,
     )
 
     benchmark(**vars(parser.parse_args()))
