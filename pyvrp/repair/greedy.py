@@ -1,0 +1,3 @@
+def greedy():
+    # TODO
+    pass

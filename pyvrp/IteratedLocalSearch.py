@@ -1,0 +1,3 @@
+class IteratedLocalSearch:
+    # TODO
+    pass
