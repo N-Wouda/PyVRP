@@ -212,14 +212,14 @@ def test_cpp_shuffle_results_in_different_solution(rc208):
 
     # LocalSearch::search is deterministic, so two calls with the same base
     # solution should result in the same improved solution.
-    improved1 = ls.search(sol, cost_evaluator)
-    improved2 = ls.search(sol, cost_evaluator)
+    improved1 = ls.search(sol, cost_evaluator, [1, 2, 3, 4])
+    improved2 = ls.search(sol, cost_evaluator, [1, 2, 3, 4])
     assert_(improved1 == improved2)
 
     # But the shuffle method changes the order in which moves are evaluated,
     # which should result in a very different search trajectory.
     ls.shuffle(rng)
-    improved3 = ls.search(sol, cost_evaluator)
+    improved3 = ls.search(sol, cost_evaluator, [3, 2, 1, 4])
     assert_(improved3 != improved1)
 
 
@@ -240,7 +240,7 @@ def test_vehicle_types_are_preserved_for_locally_optimal_solutions(rc208):
     cost_evaluator = CostEvaluator(1, 1, 0)
     sol = Solution.make_random(rc208, rng)
 
-    improved = ls.search(sol, cost_evaluator)
+    improved = ls.search(sol, cost_evaluator, [1, 2, 3, 4])
 
     # Now make the instance heterogeneous and update the local search.
     data = rc208.replace(
@@ -260,7 +260,7 @@ def test_vehicle_types_are_preserved_for_locally_optimal_solutions(rc208):
 
     # Doing the search should not find any further improvements thus not change
     # the solution.
-    further_improved = ls.search(improved, cost_evaluator)
+    further_improved = ls.search(improved, cost_evaluator, [1, 2, 3, 4])
     assert_equal(further_improved, improved)
 
 
@@ -286,7 +286,7 @@ def test_bugfix_vehicle_type_offsets(ok_small):
     current = Solution(data, [Route(data, [1, 3], 1), Route(data, [2, 4], 1)])
     current_cost = cost_evaluator.penalised_cost(current)
 
-    improved = ls.search(current, cost_evaluator)
+    improved = ls.search(current, cost_evaluator, [1, 2, 3, 4])
     improved_cost = cost_evaluator.penalised_cost(improved)
 
     assert_(improved_cost <= current_cost)

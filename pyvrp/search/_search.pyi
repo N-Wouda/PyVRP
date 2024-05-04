@@ -51,6 +51,7 @@ class LocalSearch:
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
+        candidates: Optional[list[int]] = None,
     ) -> Solution: ...
     def shuffle(self, rng: RandomNumberGenerator) -> None: ...
     def intensify(
@@ -60,7 +61,10 @@ class LocalSearch:
         overlap_tolerance: float = 0.05,
     ) -> Solution: ...
     def search(
-        self, solution: Solution, cost_evaluator: CostEvaluator
+        self,
+        solution: Solution,
+        cost_evaluator: CostEvaluator,
+        candidates: Optional[list[int]] = None,
     ) -> Solution: ...
 
 class Route:

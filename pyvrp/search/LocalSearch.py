@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pyvrp._pyvrp import (
     CostEvaluator,
     ProblemData,
@@ -30,6 +32,11 @@ class LocalSearch:
         rng: RandomNumberGenerator,
         neighbours: list[list[int]],
     ):
+        self._clients = [
+            idx for idx in range(data.num_depots, data.num_locations)
+        ]
+
+        self._data = data
         self._ls = _LocalSearch(data, neighbours)
         self._rng = rng
 
@@ -80,6 +87,7 @@ class LocalSearch:
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
+        candidates: Optional[list[int]] = None,
     ) -> Solution:
         """
         This method uses the :meth:`~search` and :meth:`~intensify` methods to
@@ -94,6 +102,8 @@ class LocalSearch:
             The solution to improve through local search.
         cost_evaluator
             Cost evaluator to use.
+        candidates
+            TODO
 
         Returns
         -------
@@ -101,8 +111,11 @@ class LocalSearch:
             The improved solution. This is not the same object as the
             solution that was passed in.
         """
+        if candidates is None:
+            candidates = self._clients
+
         self._ls.shuffle(self._rng)
-        return self._ls(solution, cost_evaluator)
+        return self._ls(solution, cost_evaluator, candidates)
 
     def intensify(
         self,
@@ -140,7 +153,10 @@ class LocalSearch:
         return self._ls.intensify(solution, cost_evaluator, overlap_tolerance)
 
     def search(
-        self, solution: Solution, cost_evaluator: CostEvaluator
+        self,
+        solution: Solution,
+        cost_evaluator: CostEvaluator,
+        candidates: Optional[list[int]] = None,
     ) -> Solution:
         """
         This method uses the node operators on this local search object to
@@ -152,6 +168,8 @@ class LocalSearch:
             The solution to improve.
         cost_evaluator
             Cost evaluator to use.
+        candidates
+            TODO
 
         Returns
         -------
@@ -159,5 +177,8 @@ class LocalSearch:
             The improved solution. This is not the same object as the
             solution that was passed in.
         """
+        if candidates is None:
+            candidates = self._clients
+
         self._ls.shuffle(self._rng)
-        return self._ls.search(solution, cost_evaluator)
+        return self._ls.search(solution, cost_evaluator, candidates)
