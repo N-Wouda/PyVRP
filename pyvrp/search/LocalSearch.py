@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pyvrp._pyvrp import (
     CostEvaluator,
     ProblemData,
@@ -68,6 +70,7 @@ class LocalSearch:
         neighbours
             A new granular neighbourhood.
         """
+        # TODO get rid of setters
         self._ls.set_neighbours(neighbours)
 
     def neighbours(self) -> list[list[int]]:
@@ -80,6 +83,7 @@ class LocalSearch:
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
+        neighbours: Optional[list[list[int]]],
     ) -> Solution:
         """
         This method uses the :meth:`~search` and :meth:`~intensify` methods to
@@ -94,6 +98,8 @@ class LocalSearch:
             The solution to improve through local search.
         cost_evaluator
             Cost evaluator to use.
+        neighbours
+            New granular neighbourhood if passed.
 
         Returns
         -------
@@ -101,6 +107,9 @@ class LocalSearch:
             The improved solution. This is not the same object as the
             solution that was passed in.
         """
+        if neighbours is not None:
+            self.set_neighbours(neighbours)
+
         self._ls.shuffle(self._rng)
         return self._ls(solution, cost_evaluator)
 
@@ -140,7 +149,10 @@ class LocalSearch:
         return self._ls.intensify(solution, cost_evaluator, overlap_tolerance)
 
     def search(
-        self, solution: Solution, cost_evaluator: CostEvaluator
+        self,
+        solution: Solution,
+        cost_evaluator: CostEvaluator,
+        neighbours: Optional[list[list[int]]] = None,
     ) -> Solution:
         """
         This method uses the node operators on this local search object to
@@ -152,6 +164,8 @@ class LocalSearch:
             The solution to improve.
         cost_evaluator
             Cost evaluator to use.
+        neighbours
+            New granular neighbourhood if passed.
 
         Returns
         -------
@@ -159,5 +173,8 @@ class LocalSearch:
             The improved solution. This is not the same object as the
             solution that was passed in.
         """
+        if neighbours is not None:
+            self.set_neighbours(neighbours)
+
         self._ls.shuffle(self._rng)
         return self._ls.search(solution, cost_evaluator)
