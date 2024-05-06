@@ -8,18 +8,15 @@
 
 using pyvrp::Solution;
 using pyvrp::search::LocalSearch;
-using CandidateNodes = std::vector<size_t>;
 
 Solution LocalSearch::operator()(Solution const &solution,
-                                 CostEvaluator const &costEvaluator,
-                                 CandidateNodes const &candidates)
+                                 CostEvaluator const &costEvaluator)
 {
-
     loadSolution(solution);
 
     while (true)
     {
-        search(costEvaluator, candidates);
+        search(costEvaluator);
         intensify(costEvaluator);
 
         if (numMoves == 0)  // then the current solution is locally optimal.
@@ -30,11 +27,10 @@ Solution LocalSearch::operator()(Solution const &solution,
 }
 
 Solution LocalSearch::search(Solution const &solution,
-                             CostEvaluator const &costEvaluator,
-                             CandidateNodes const &candidates)
+                             CostEvaluator const &costEvaluator)
 {
     loadSolution(solution);
-    search(costEvaluator, candidates);
+    search(costEvaluator);
     return exportSolution();
 }
 
@@ -47,8 +43,7 @@ Solution LocalSearch::intensify(Solution const &solution,
     return exportSolution();
 }
 
-void LocalSearch::search(CostEvaluator const &costEvaluator,
-                         CandidateNodes const &candidates)
+void LocalSearch::search(CostEvaluator const &costEvaluator)
 {
     if (nodeOps.empty())
         return;
@@ -67,7 +62,7 @@ void LocalSearch::search(CostEvaluator const &costEvaluator,
         searchCompleted = true;
 
         // Node operators are evaluated for neighbouring (U, V) pairs.
-        for (auto const uClient : candidates)
+        for (auto const uClient : orderNodes)
         {
             auto *U = &nodes[uClient];
 

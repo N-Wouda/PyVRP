@@ -19,7 +19,6 @@ class LocalSearch
     using NodeOp = LocalSearchOperator<Route::Node>;
     using RouteOp = LocalSearchOperator<Route>;
     using Neighbours = std::vector<std::vector<size_t>>;
-    using CandidateNodes = std::vector<size_t>;
 
     ProblemData const &data;
 
@@ -70,8 +69,7 @@ class LocalSearch
     void update(Route *U, Route *V);
 
     // Performs search on the currently loaded solution.
-    void search(CostEvaluator const &costEvaluator,
-                CandidateNodes const &candidates);
+    void search(CostEvaluator const &costEvaluator);
 
     // Performs intensify on the currently loaded solution.
     void intensify(CostEvaluator const &costEvaluator,
@@ -110,16 +108,14 @@ public:
      * improvements are made.
      */
     Solution operator()(Solution const &solution,
-                        CostEvaluator const &costEvaluator,
-                        CandidateNodes const &candidates);
+                        CostEvaluator const &costEvaluator);
 
     /**
      * Performs regular (node-based) local search around the given solution,
      * and returns a new, hopefully improved solution.
      */
     Solution search(Solution const &solution,
-                    CostEvaluator const &costEvaluator,
-                    CandidateNodes const &candidates);
+                    CostEvaluator const &costEvaluator);
 
     /**
      * Performs a more intensive route-based local search around the given
