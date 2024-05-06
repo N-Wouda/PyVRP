@@ -16,7 +16,6 @@ if TYPE_CHECKING:
         Solution,
     )
     from pyvrp.accept import AcceptanceCriterion
-    from pyvrp.perturb.PerturbMethod import PerturbMethod
     from pyvrp.search.SearchMethod import SearchMethod
     from pyvrp.stop.StoppingCriterion import StoppingCriterion
 
@@ -84,7 +83,7 @@ class IteratedLocalSearch:
         data: ProblemData,
         penalty_manager: PenaltyManager,
         rng: RandomNumberGenerator,
-        perturb_method: PerturbMethod,
+        perturb_method: SearchMethod,
         search_method: SearchMethod,
         acceptance_criterion: AcceptanceCriterion,
         params: IteratedLocalSearchParams,
@@ -105,6 +104,8 @@ class IteratedLocalSearch:
         self,
         stop: StoppingCriterion,
         initial_solution: Solution,
+        collect_stats: bool,
+        display: bool,
     ) -> Result:
         """
         Runs the iterated local search algorithm.

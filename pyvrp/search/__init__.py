@@ -1,5 +1,6 @@
 from typing import Type
 
+from .DestroyRepair import DestroyRepair as DestroyRepair
 from .LocalSearch import LocalSearch as LocalSearch
 from .SearchMethod import SearchMethod as SearchMethod
 from ._search import Exchange10 as Exchange10
