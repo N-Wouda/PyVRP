@@ -13,6 +13,8 @@ from pyvrp.PenaltyManager import PenaltyManager, PenaltyParams
 from pyvrp.Result import Result
 from pyvrp._pyvrp import ProblemData, RandomNumberGenerator, Solution
 from pyvrp.accept import RecordToRecord
+from pyvrp.destroy import DESTROY_OPERATORS, DestroyOperator
+from pyvrp.repair import REPAIR_OPERATORS, RepairOperator
 from pyvrp.search import (
     NODE_OPERATORS,
     ROUTE_OPERATORS,
@@ -54,12 +56,16 @@ class SolveParams:
         ils: IteratedLocalSearchParams = IteratedLocalSearchParams(),
         penalty: PenaltyParams = PenaltyParams(),
         neighbourhood: NeighbourhoodParams = NeighbourhoodParams(),
+        destroy_ops: list[DestroyOperator] = DESTROY_OPERATORS,
+        repair_ops: list[RepairOperator] = REPAIR_OPERATORS,
         node_ops: list[Type[NodeOperator]] = NODE_OPERATORS,
         route_ops: list[Type[RouteOperator]] = ROUTE_OPERATORS,
     ):
         self._ils = ils
         self._penalty = penalty
         self._neighbourhood = neighbourhood
+        self._destroy_ops = destroy_ops
+        self._repair_ops = repair_ops
         self._node_ops = node_ops
         self._route_ops = route_ops
 
@@ -69,6 +75,8 @@ class SolveParams:
             and self.ils == other.ils
             and self.penalty == other.penalty
             and self.neighbourhood == other.neighbourhood
+            and self.destroy_ops == other.destroy_ops
+            and self.repair_ops == other.repair_ops
             and self.node_ops == other.node_ops
             and self.route_ops == other.route_ops
         )
@@ -84,6 +92,14 @@ class SolveParams:
     @property
     def neighbourhood(self):
         return self._neighbourhood
+
+    @property
+    def destroy_ops(self):
+        return self._destroy_ops
+
+    @property
+    def repair_ops(self):
+        return self._repair_ops
 
     @property
     def node_ops(self):
@@ -105,6 +121,18 @@ class SolveParams:
         pen_params = PenaltyParams(**data.get("penalty", {}))
         nb_params = NeighbourhoodParams(**data.get("neighbourhood", {}))
 
+        destroy_ops = DESTROY_OPERATORS
+        if "destroy_ops" in data:
+            destroy_ops = [
+                getattr(pyvrp.destroy, op) for op in data["destroy_ops"]
+            ]
+
+        repair_ops = DESTROY_OPERATORS
+        if "repair_ops" in data:
+            repair_ops = [
+                getattr(pyvrp.repair, op) for op in data["repair_ops"]
+            ]
+
         node_ops = NODE_OPERATORS
         if "node_ops" in data:
             node_ops = [getattr(pyvrp.search, op) for op in data["node_ops"]]
@@ -113,7 +141,15 @@ class SolveParams:
         if "route_ops" in data:
             route_ops = [getattr(pyvrp.search, op) for op in data["route_ops"]]
 
-        return cls(ils_params, pen_params, nb_params, node_ops, route_ops)
+        return cls(
+            ils_params,
+            pen_params,
+            nb_params,
+            destroy_ops,
+            repair_ops,
+            node_ops,
+            route_ops,
+        )
 
 
 def solve(
@@ -153,9 +189,7 @@ def solve(
     """
     rng = RandomNumberGenerator(seed=seed)
 
-    destroy_ops = ...
-    repair_ops = ...
-    perturb = DestroyRepair(rng, destroy_ops, repair_ops)  # TODO
+    perturb = DestroyRepair(rng, params.destroy_ops, params.repair_ops)  # TODO
     pm = PenaltyManager(params.penalty)
     accept = RecordToRecord()  # TODO
 
