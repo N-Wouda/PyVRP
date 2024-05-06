@@ -1,7 +1,5 @@
 from typing import Protocol
 
-from numpy.random import RandomState
-
 
 class AcceptanceCriterion(Protocol):
     """
@@ -10,7 +8,6 @@ class AcceptanceCriterion(Protocol):
 
     def __call__(
         self,
-        rnd: RandomState,
         best_cost: float,
         current_cost: float,
         candidate_cost: float,
@@ -21,8 +18,6 @@ class AcceptanceCriterion(Protocol):
 
         Parameters
         ----------
-        rnd
-            May be used to draw random numbers from.
         best_cost
             The cost of the best solution observed so far.
         current_cost
