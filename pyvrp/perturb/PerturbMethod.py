@@ -24,3 +24,11 @@ class PerturbMethod(Protocol):
         Solution
             The perturbed solution.
         """
+
+    def register(
+        self, current: Solution, perturbed: Solution, candidate: Solution
+    ):
+        """
+        Registers information between the current, perturbed, and candidate
+        solutions.
+        """

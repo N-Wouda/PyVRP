@@ -29,3 +29,11 @@ class SearchMethod(Protocol):  # pragma: no cover
         Solution
             The improved solution.
         """
+
+    def register(
+        self, current: Solution, perturbed: Solution, candidate: Solution
+    ):
+        """
+        Registers information between the current, perturbed, and candidate
+        solutions.
+        """
