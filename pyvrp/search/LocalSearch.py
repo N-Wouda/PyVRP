@@ -83,7 +83,7 @@ class LocalSearch:
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
-        neighbours: Optional[list[list[int]]],
+        neighbours: Optional[list[list[int]]] = None,
     ) -> Solution:
         """
         This method uses the :meth:`~search` and :meth:`~intensify` methods to

@@ -10,7 +10,6 @@ from pyvrp.IteratedLocalSearch import (
     IteratedLocalSearchParams,
 )
 from pyvrp.PenaltyManager import PenaltyManager, PenaltyParams
-from pyvrp.Result import Result
 from pyvrp._pyvrp import ProblemData, RandomNumberGenerator, Solution
 from pyvrp.accept import RecordToRecord
 from pyvrp.destroy import DESTROY_OPERATORS, DestroyOperator
@@ -189,9 +188,9 @@ def solve(
     """
     rng = RandomNumberGenerator(seed=seed)
 
-    perturb = DestroyRepair(rng, params.destroy_ops, params.repair_ops)  # TODO
+    perturb = DestroyRepair(data, rng, params.destroy_ops, params.repair_ops)
     pm = PenaltyManager(params.penalty)
-    accept = RecordToRecord()  # TODO
+    accept = RecordToRecord(0.02, 0.00, 5)  # type: ignore
 
     neighbours = compute_neighbours(data, params.neighbourhood)
     ls = LocalSearch(data, rng, neighbours)

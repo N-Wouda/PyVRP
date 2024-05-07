@@ -3,6 +3,7 @@ import random as random
 from pyvrp._pyvrp import (
     CostEvaluator,
     ProblemData,
+    RandomNumberGenerator,
     Solution,
 )
 from pyvrp.repair import greedy_repair
@@ -12,6 +13,7 @@ def greedy(
     data: ProblemData,
     solution: Solution,
     cost_eval: CostEvaluator,
+    rng: RandomNumberGenerator,
 ) -> Solution:
     """
     Small wrapper around ``greedy_repair`` to have Solution's as input and

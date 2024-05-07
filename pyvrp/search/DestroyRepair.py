@@ -16,13 +16,16 @@ class DestroyRepair:
         destroy_ops: list,
         repair_ops: list,
     ):
-        pass
+        self._data = data
+        self._rng = rng
+        self._destroy_ops = destroy_ops
+        self._repair_ops = repair_ops
 
     def __call__(
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
-        candidates: Optional[list[int]] = None,
+        neighbours: Optional[list[list[int]]] = None,
     ) -> Solution:
         """
         This method uses the :meth:`~search` and :meth:`~intensify` methods to
@@ -37,8 +40,8 @@ class DestroyRepair:
             The solution to improve through local search.
         cost_evaluator
             Cost evaluator to use.
-        candidates
-            TODO
+        neighbours
+            New granular neighbourhood if passed.
 
         Returns
         -------
@@ -46,7 +49,14 @@ class DestroyRepair:
             The improved solution. This is not the same object as the
             solution that was passed in.
         """
-        pass
+        d_idx = self._rng.randint(len(self._destroy_ops))
+        r_idx = self._rng.randint(len(self._repair_ops))
+
+        destroy_op = self._destroy_ops[d_idx]
+        repair_op = self._repair_ops[r_idx]
+
+        destroyed = destroy_op(self._data, solution, cost_evaluator, self._rng)
+        return repair_op(self._data, destroyed, cost_evaluator, self._rng)
 
     def register(
         self, current: Solution, perturbed: Solution, candidate: Solution

@@ -139,8 +139,6 @@ class IteratedLocalSearch:
             candidate = self._search(perturbed, self._cost_evaluator)
 
             self._pm.register(candidate)
-            self._perturb.register(current, perturbed, candidate)
-            self._search.register(current, perturbed, candidate)
 
             cost = self._cost_evaluator.cost(candidate)
             best_cost = self._cost_evaluator.cost(best)
