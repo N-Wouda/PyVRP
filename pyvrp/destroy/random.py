@@ -14,7 +14,7 @@ def random(
     solution: Solution,
     cost_eval: CostEvaluator,
     rng: RandomNumberGenerator,
-    perturbation_strength=30,
+    perturbation_strength=50,
 ) -> Solution:
     """
     Randomly removes a number of clients from the solution.

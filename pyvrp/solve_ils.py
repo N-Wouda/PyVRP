@@ -19,6 +19,7 @@ from pyvrp.search import (
     ROUTE_OPERATORS,
     DestroyRepair,
     LocalSearch,
+    NeighbourhoodManager,
     NeighbourhoodParams,
     NodeOperator,
     RouteOperator,
@@ -190,9 +191,13 @@ def solve(
 
     perturb = DestroyRepair(data, rng, params.destroy_ops, params.repair_ops)
     pm = PenaltyManager(params.penalty)
-    accept = RecordToRecord(0.02, 0.00, 5)  # type: ignore
+
+    max_runtime = stop.criteria[0]._max_runtime  # HACK
+    accept = RecordToRecord(0.015, 0.00, max_runtime)  # type: ignore
+    # accept = MovingAverageThreshold(0.3, 50)
 
     neighbours = compute_neighbours(data, params.neighbourhood)
+    nbhd = NeighbourhoodManager(data, neighbours)
     ls = LocalSearch(data, rng, neighbours)
 
     for node_op in params.node_ops:
@@ -201,8 +206,9 @@ def solve(
     for route_op in params.route_ops:
         ls.add_route_operator(route_op(data))
 
-    ils_args = (data, pm, rng, perturb, ls, accept, params.ils)
+    ils_args = (data, pm, nbhd, rng, perturb, ls, accept, params.ils)
     algo = IteratedLocalSearch(*ils_args)  # type: ignore
     init = Solution.make_random(data, rng)
+    init = ls(init, pm.cost_evaluator())
 
     return algo.run(stop, init, collect_stats, display)

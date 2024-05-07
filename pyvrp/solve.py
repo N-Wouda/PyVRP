@@ -173,6 +173,7 @@ def solve(
 
     pm = PenaltyManager(params.penalty)
     pop = Population(bpd, params.population)
+
     init = [
         Solution.make_random(data, rng)
         for _ in range(params.population.min_pop_size)

@@ -1,3 +1,5 @@
+import random
+
 from pyvrp._pyvrp import (
     CostEvaluator,
     ProblemData,
@@ -12,34 +14,35 @@ def sequential(
     solution: Solution,
     cost_eval: CostEvaluator,
     rng: RandomNumberGenerator,
-    perturbation_strength: int = 30,
-    MAX_STRING_SIZE: int = 10,
 ) -> Solution:
-    avg_route_size = solution.num_clients() // solution.num_routes()
-    max_string_size = max(MAX_STRING_SIZE, avg_route_size)
-    num_strings = perturbation_strength // max_string_size
-    max_string_removals = min(solution.num_routes(), num_strings)
-
-    # TODO find seed
-
+    perturbation_strength = random.randint(10, 20)
     # Select a random route
     routes = solution.routes()
     current = routes.pop(rng.randint(len(routes)))
+    cands = []
     pool = []
 
     # Continue until enough routes are destroyed
-    for _ in range(max_string_removals):
+    while len(cands) < perturbation_strength:
+        max_string_size = perturbation_strength - len(cands)
         new = remove_string(current, max_string_size, data, rng)
         if len(new) > 0:
             pool.append(new)
 
-        if _ == max_string_removals - 1:
+        cands.extend(
+            [idx for idx in current.visits() if idx not in new.visits()]
+        )
+
+        if len(cands) >= perturbation_strength:
             break
 
         # Find the nearest route
         distances = [dist(new, route) for route in routes]
         idx = distances.index(min(distances))
         current = routes.pop(idx)
+
+        # # Select random route
+        # current = routes.pop(rng.randint(len(routes)))
 
     return Solution(data, routes + pool)
 
@@ -59,15 +62,8 @@ def remove_string(route, max_string_size, data, rng):
     start = rng.randint(len(route))
     skip = {(start + idx) % len(route) for idx in range(size)}
 
-    if rng.rand() < 0.5:
-        visits = [
-            client
-            for idx, client in enumerate(route.visits())
-            if idx not in skip
-        ]
-    else:
-        visits = [
-            client for idx, client in enumerate(route.visits()) if idx in skip
-        ]
+    visits = [
+        client for idx, client in enumerate(route.visits()) if idx not in skip
+    ]
 
     return Route(data, visits, route.vehicle_type())

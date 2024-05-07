@@ -17,6 +17,7 @@ from ._search import RouteOperator as RouteOperator
 from ._search import SwapRoutes as SwapRoutes
 from ._search import SwapStar as SwapStar
 from ._search import SwapTails as SwapTails
+from .neighbourhood import NeighbourhoodManager as NeighbourhoodManager
 from .neighbourhood import NeighbourhoodParams as NeighbourhoodParams
 from .neighbourhood import compute_neighbours as compute_neighbours
 

@@ -25,5 +25,6 @@ class RecordToRecord:
     def __call__(self, best: float, curr: float, cand: float):
         elapsed = (time.perf_counter() - self._start_time) / self.max_runtime
         threshold = (self._delta_pct * (1 - elapsed) + self.end_pct) * best
+        threshold = max(0, threshold)  # Ensure threshold is non-negative
 
         return cand - best <= threshold

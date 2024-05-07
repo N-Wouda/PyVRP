@@ -7,7 +7,6 @@ from pyvrp._pyvrp import (
     Route,
     Solution,
 )
-from pyvrp.search import NeighbourhoodParams, compute_neighbours
 
 
 def concentric(
@@ -16,31 +15,18 @@ def concentric(
     cost_eval: CostEvaluator,
     rng: RandomNumberGenerator,
 ):
-    params = NeighbourhoodParams(nb_granular=data.num_locations)
-    neighbourhood = compute_neighbours(data, params)
-
-    clients = [idx for route in solution.routes() for idx in route.visits()]
-    num_destroy = rng.randint(50) + 1
+    num_destroy = random.randint(10, 20)
 
     # Find all client indices to skip
-    skip = set()
-
-    random.shuffle(clients)
-    current = random.choice(clients)
-    skip.add(current)
-
-    while len(skip) < num_destroy:
-        candidate = random.choice(neighbourhood[current])
-        if candidate in skip:
-            continue
-
-        skip.add(candidate)
-        current = candidate
+    client = rng.randint(data.num_clients) + 1
+    closest = data.distance_matrix(0)[client].argsort().tolist()
+    closest.remove(client)
+    top_k = closest[:num_destroy]
 
     # Rebuild the Solution but skip those clients
     routes = []
     for route in solution.routes():
-        if visits := [idx for idx in route.visits() if idx not in skip]:
+        if visits := [idx for idx in route.visits() if idx not in top_k]:
             routes.append(Route(data, visits, route.vehicle_type()))
 
     return Solution(data, routes)

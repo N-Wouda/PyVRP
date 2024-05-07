@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         Solution,
     )
     from pyvrp.accept import AcceptanceCriterion
+    from pyvrp.search import NeighbourhoodManager
     from pyvrp.search.SearchMethod import SearchMethod
     from pyvrp.stop.StoppingCriterion import StoppingCriterion
 
@@ -47,7 +48,7 @@ class IteratedLocalSearchParams:
         ``nb_iter_no_improvement`` is negative.
     """
 
-    repair_probability: float = 0.80
+    repair_probability: float = 0.10
     nb_iter_no_improvement: int = 20_000
 
     def __post_init__(self):
@@ -65,6 +66,8 @@ class IteratedLocalSearch:
         The problem data instance.
     penalty_manager
         Penalty manager to use.
+    nbhd_manager
+        Neighbourhood manager to use.
     rng
         Random number generator.
     perturb_method
@@ -82,6 +85,7 @@ class IteratedLocalSearch:
         self,
         data: ProblemData,
         penalty_manager: PenaltyManager,
+        neighbourhood_manager: NeighbourhoodManager,
         rng: RandomNumberGenerator,
         perturb_method: SearchMethod,
         search_method: SearchMethod,
@@ -90,6 +94,7 @@ class IteratedLocalSearch:
     ):
         self._data = data
         self._pm = penalty_manager
+        self._nm = neighbourhood_manager
         self._rng = rng
         self._perturb = perturb_method
         self._search = search_method
@@ -136,7 +141,10 @@ class IteratedLocalSearch:
             iters += 1
 
             perturbed = self._perturb(current, self._cost_evaluator)
-            candidate = self._search(perturbed, self._cost_evaluator)
+            neighbours = self._nm(current, perturbed)
+            candidate = self._search(
+                perturbed, self._cost_evaluator, neighbours
+            )
 
             self._pm.register(candidate)
 
@@ -166,12 +174,13 @@ class IteratedLocalSearch:
                     best, current = candidate, candidate
                     continue
 
-        # Accept based on penalised costs.
-        current_cost = self._cost_evaluator.penalised_cost(current)
-        candidate_cost = self._cost_evaluator.penalised_cost(candidate)
+            # Accept based on penalised costs.
+            current_cost = self._cost_evaluator.penalised_cost(current)
+            candidate_cost = self._cost_evaluator.penalised_cost(candidate)
 
-        if self._accept(best_cost, current_cost, candidate_cost):
-            current = candidate
+            print(best_cost, current_cost, candidate_cost)
+            if self._accept(best_cost, current_cost, candidate_cost):
+                current = candidate
 
         end = time.perf_counter()
         runtime = end - start

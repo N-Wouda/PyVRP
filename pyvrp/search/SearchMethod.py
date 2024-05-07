@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Optional, Protocol
 
 from pyvrp._pyvrp import CostEvaluator, Solution
 
@@ -12,6 +12,7 @@ class SearchMethod(Protocol):  # pragma: no cover
         self,
         solution: Solution,
         cost_evaluator: CostEvaluator,
+        neighbours: Optional[list[list[int]]] = None,
     ) -> Solution:
         """
         Search around the given solution, and returns a new solution that is
@@ -28,12 +29,4 @@ class SearchMethod(Protocol):  # pragma: no cover
         -------
         Solution
             The improved solution.
-        """
-
-    def register(
-        self, current: Solution, perturbed: Solution, candidate: Solution
-    ):
-        """
-        Registers information between the current, perturbed, and candidate
-        solutions.
         """
