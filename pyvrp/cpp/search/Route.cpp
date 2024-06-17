@@ -88,7 +88,6 @@ void Route::clear()
     DurationSegment depotDS(vehicleType_.depot,
                             vehicleType_.depot,
                             0,
-                            0,
                             std::max(depot.twEarly, vehicleType_.twEarly),
                             std::min(depot.twLate, vehicleType_.twLate),
                             0);

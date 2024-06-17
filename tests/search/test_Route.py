@@ -328,8 +328,8 @@ def test_route_duration_access(ok_small):
         loc = ok_small.location(idx % (len(route) + 1))
         ds = route.duration_at(idx)
 
-        assert_equal(ds.tw_early(), loc.tw_early)
-        assert_equal(ds.tw_late(), loc.tw_late)
+        assert_equal(ds.earliest_start(), loc.tw_early)
+        assert_equal(ds.latest_start(), loc.tw_late)
         assert_equal(ds.duration(), 0 if is_depot else loc.service_duration)
         assert_equal(ds.time_warp(), 0)
 
@@ -456,8 +456,8 @@ def test_shift_duration_depot_time_window_interaction(
 
     for idx in [0, 1]:
         ds = route.duration_at(idx)
-        assert_equal(ds.tw_early(), expected_tw[0])
-        assert_equal(ds.tw_late(), expected_tw[1])
+        assert_equal(ds.earliest_start(), expected_tw[0])
+        assert_equal(ds.latest_start(), expected_tw[1])
 
 
 @pytest.mark.parametrize("clients", [(1, 2, 3, 4), (1, 2), (3, 4)])
