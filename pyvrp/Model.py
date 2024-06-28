@@ -254,8 +254,6 @@ class Model:
         self,
         x: int,
         y: int,
-        tw_early: int = 0,
-        tw_late: int = np.iinfo(np.int64).max,
         *,
         name: str = "",
     ) -> Depot:
@@ -263,7 +261,7 @@ class Model:
         Adds a depot with the given attributes to the model. Returns the
         created :class:`~pyvrp._pyvrp.Depot` instance.
         """
-        depot = Depot(x=x, y=y, tw_early=tw_early, tw_late=tw_late, name=name)
+        depot = Depot(x=x, y=y, name=name)
         self._depots.append(depot)
 
         for group in self._groups:  # new depot invalidates client indices
@@ -315,7 +313,8 @@ class Model:
         self,
         num_available: int = 1,
         capacity: int = 0,
-        depot: Optional[Depot] = None,
+        start_depot: Optional[Depot] = None,
+        end_depot: Optional[Depot] = None,
         fixed_cost: int = 0,
         tw_early: int = 0,
         tw_late: int = np.iinfo(np.int64).max,
@@ -333,8 +332,8 @@ class Model:
 
         .. note::
 
-           The vehicle type is assigned to the first depot if ``depot`` is not
-           provided.
+           The vehicle type is assigned to the first depot if no depot
+           information is provided.
 
         Raises
         ------
@@ -342,12 +341,19 @@ class Model:
             When the given ``depot`` or ``profile`` arguments are not in this
             model instance.
         """
-        if depot is None:
-            depot_idx = 0
-        elif depot in self._depots:
-            depot_idx = self._depots.index(depot)
+        if start_depot is None:
+            start_idx = 0
+        elif start_depot in self._depots:
+            start_idx = self._depots.index(start_depot)
         else:
-            raise ValueError("The given depot is not in this model.")
+            raise ValueError("The given start depot is not in this model.")
+
+        if end_depot is None:
+            end_idx = 0
+        elif end_depot in self._depots:
+            end_idx = self._depots.index(end_depot)
+        else:
+            raise ValueError("The given end depot is not in this model.")
 
         if profile is None:
             profile_idx = 0
@@ -359,7 +365,8 @@ class Model:
         vehicle_type = VehicleType(
             num_available=num_available,
             capacity=capacity,
-            depot=depot_idx,
+            start_depot=start_idx,
+            end_depot=end_idx,
             fixed_cost=fixed_cost,
             tw_early=tw_early,
             tw_late=tw_late,

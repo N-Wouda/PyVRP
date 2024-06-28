@@ -73,6 +73,24 @@ def test_insert_cost(ok_small):
     assert_equal(insert_cost(Node(loc=3), route[2], ok_small, cost_eval), 4355)
 
 
+def test_insert_cost_between_different_depots(ok_small_multi_depot):
+    """
+    Tests that insert_cost() correctly determines the delta distance cost of
+    inserting a new node in an empty route with two different depots.
+    """
+    vehicle_type = VehicleType(3, 10, start_depot=0, end_depot=1)
+    data = ok_small_multi_depot.replace(vehicle_types=[vehicle_type])
+
+    route = Route(data, idx=0, vehicle_type=0)
+    route.update()
+
+    cost_eval = CostEvaluator(0, 0, 0)
+    dist_mat = data.distance_matrix(0)
+
+    delta = dist_mat[0, 2] + dist_mat[2, 1] - dist_mat[0, 1]
+    assert_equal(insert_cost(Node(loc=2), route[0], data, cost_eval), delta)
+
+
 def test_remove_cost_zero_when_not_allowed(ok_small):
     """
     Tests that remove_cost() returns zero when a move is not possible. This is

@@ -9,7 +9,7 @@
 PyVRP is an open-source, state-of-the-art vehicle routing problem (VRP) solver.
 It currently supports VRPs with:
 - Pickups and deliveries between depots and clients (capacitated VRP, VRP with simultaneous pickup and delivery, VRP with backhaul);
-- Vehicles of different capacities, costs, shift durations, and maximum distance and duration constraints (heterogeneous fleet VRP);
+- Vehicles of different capacities, costs, shift durations, routing profiles, and maximum distance and duration constraints (heterogeneous fleet VRP, site-dependent VRP);
 - Time windows, client service durations, and release times (VRP with time windows and release times);
 - Multiple depots (multi-depot VRP);
 - Optional clients with prizes for visiting (prize collecting, team orienteering problem);
@@ -48,7 +48,10 @@ one!
 
 ### Getting help
 
-If you are looking for help, please follow the instructions [here][3].
+Feel free to open an issue or a new discussion thread here on GitHub.
+Please do not e-mail us with questions, modelling issues, or code examples.
+Those are much easier to discuss via GitHub than over e-mail.
+When writing your issue or discussion, please follow the instructions [here][3].
 
 ### How to cite PyVRP
 

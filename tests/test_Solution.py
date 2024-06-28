@@ -56,17 +56,20 @@ def test_route_constructor_with_different_vehicle_types(ok_small):
     assert_equal(routes[1], Route(data, [1, 2], 1))
 
 
-def test_route_depot_accessor(ok_small_multi_depot):
+def test_route_depot_accessors(ok_small_multi_depot):
     """
-    Tests that Route's depot() member returns the correct depot location index.
+    Tests that Route's start_depot() and end_depot() members return the correct
+    depot location indices.
     """
     routes = [
         Route(ok_small_multi_depot, [2], 0),
         Route(ok_small_multi_depot, [3, 4], 1),
     ]
 
-    assert_equal(routes[0].depot(), 0)
-    assert_equal(routes[1].depot(), 1)
+    assert_equal(routes[0].start_depot(), 0)
+    assert_equal(routes[0].end_depot(), 0)
+    assert_equal(routes[1].start_depot(), 1)
+    assert_equal(routes[1].end_depot(), 1)
 
 
 def test_route_eq(ok_small):
@@ -291,7 +294,10 @@ def test_neighbours_multi_depot(ok_small):
     data = ok_small.replace(
         depots=locations[:2],
         clients=locations[2:],
-        vehicle_types=[VehicleType(depot=0), VehicleType(depot=1)],
+        vehicle_types=[
+            VehicleType(start_depot=0, end_depot=0),
+            VehicleType(start_depot=1, end_depot=1),
+        ],
     )
 
     sol = Solution(data, [Route(data, [4], 0), Route(data, [2, 3], 1)])
@@ -677,8 +683,8 @@ def test_time_warp_for_a_very_constrained_problem(dist_mat):
             Client(x=1, y=0, tw_late=5),
             Client(x=2, y=0, tw_late=5),
         ],
-        depots=[Depot(x=0, y=0, tw_late=10)],
-        vehicle_types=[VehicleType(2)],
+        depots=[Depot(x=0, y=0)],
+        vehicle_types=[VehicleType(2, tw_late=10)],
         distance_matrices=[dist_mat],
         duration_matrices=[dur_mat],
     )
@@ -709,8 +715,8 @@ def test_time_warp_return_to_depot():
     """
     data = ProblemData(
         clients=[Client(x=1, y=0)],
-        depots=[Depot(x=0, y=0, tw_late=1)],
-        vehicle_types=[VehicleType()],
+        depots=[Depot(x=0, y=0)],
+        vehicle_types=[VehicleType(tw_late=1)],
         distance_matrices=[np.asarray([[0, 0], [0, 0]])],
         duration_matrices=[np.asarray([[0, 1], [1, 0]])],
     )
@@ -719,9 +725,9 @@ def test_time_warp_return_to_depot():
     route, *_ = sol.routes()
 
     # Travel from depot to client and back gives duration 1 + 1 = 2. This is 1
-    # more than the depot time window 1, giving a time warp of 1.
+    # more than the vehicle time window 1, giving a time warp of 1.
     assert_equal(route.duration(), 2)
-    assert_equal(data.location(0).tw_late, 1)
+    assert_equal(data.vehicle_type(0).tw_late, 1)
     assert_equal(sol.time_warp(), 1)
 
 
@@ -1113,3 +1119,23 @@ def test_distance_duration_cost_calculations(ok_small):
     assert_equal(sol.distance_cost(), sum(r.distance_cost() for r in routes))
     assert_equal(sol.duration(), sum(r.duration() for r in routes))
     assert_equal(sol.duration_cost(), sum(r.duration_cost() for r in routes))
+
+
+def test_start_end_depot_not_same_on_empty_route(ok_small_multi_depot):
+    """
+    Tests that empty routes correctly evaluate distance and duration travelled
+    between depots, even though there are no actual clients on the route.
+    """
+    vehicle_type = VehicleType(3, 10, start_depot=0, end_depot=1)
+    data = ok_small_multi_depot.replace(vehicle_types=[vehicle_type])
+
+    route = Route(data, [], vehicle_type=0)
+
+    assert_equal(route.start_depot(), 0)
+    assert_equal(route.end_depot(), 1)
+
+    dist_mat = data.distance_matrix(0)
+    assert_equal(route.distance(), dist_mat[0, 1])
+
+    dur_mat = data.duration_matrix(0)
+    assert_equal(route.duration(), dur_mat[0, 1])

@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_equal, assert_raises
 
-from pyvrp import Depot
+from pyvrp import Client
 
 
 @pytest.mark.parametrize(
@@ -29,8 +29,8 @@ def test_measure_convertible_to_int(input, expected):
     Tests that input argument for which int() succeeds are also properly
     handled on the C++ side.
     """
-    depot = Depot(1, 1, tw_late=input)
-    assert_equal(depot.tw_late, expected)
+    client = Client(1, 1, tw_late=input)
+    assert_equal(client.tw_late, expected)
 
 
 @pytest.mark.parametrize(
@@ -42,4 +42,4 @@ def test_larger_than_max_size(input):
     raise an overflow error to warn the user.
     """
     with assert_raises(OverflowError):
-        Depot(1, 1, tw_late=input)
+        Client(1, 1, tw_late=input)

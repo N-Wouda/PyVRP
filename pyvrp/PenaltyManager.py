@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from statistics import fmean
+from warnings import warn
 
 import numpy as np
 
-from pyvrp._pyvrp import CostEvaluator, Solution
+from pyvrp._pyvrp import CostEvaluator, ProblemData, Solution
+from pyvrp.exceptions import PenaltyBoundWarning
 
 
 @dataclass
@@ -13,17 +17,6 @@ class PenaltyParams:
 
     Parameters
     ----------
-    init_load_penalty
-        Initial penalty on excess load. This is the amount by which one unit of
-        excess load is penalised in the objective, at the start of the search.
-    init_time_warp_penalty
-        Initial penalty on time warp. This is the amount by which one unit of
-        time warp (time window violations) is penalised in the objective, at
-        the start of the search.
-    init_dist_penalty
-        Initial penalty on excess distance. This is the amount by which one
-        unit of excess distance is penalised in the objective, at the start of
-        the search.
     repair_booster
         A repair booster value :math:`r \\ge 1`. This value is used to
         temporarily multiply the current penalty terms, to force feasibility.
@@ -57,12 +50,6 @@ class PenaltyParams:
 
     Attributes
     ----------
-    init_load_penalty
-        Initial penalty on excess load.
-    init_time_warp_penalty
-        Initial penalty on time warp.
-    init_dist_penalty
-        Initial penalty on excess distance.
     repair_booster
         A repair booster value.
     solutions_between_updates
@@ -81,9 +68,6 @@ class PenaltyParams:
         in the last ``solutions_between_updates`` registrations.
     """
 
-    init_load_penalty: int = 20
-    init_time_warp_penalty: int = 6
-    init_dist_penalty: int = 6
     repair_booster: int = 12
     solutions_between_updates: int = 50
     penalty_increase: float = 1.34
@@ -91,17 +75,20 @@ class PenaltyParams:
     target_feasible: float = 0.43
 
     def __post_init__(self):
+        if not self.repair_booster >= 1:
+            raise ValueError("Expected repair_booster >= 1.")
+
+        if not self.solutions_between_updates >= 1:
+            raise ValueError("Expected solutions_between_updates >= 1.")
+
         if not self.penalty_increase >= 1.0:
             raise ValueError("Expected penalty_increase >= 1.")
 
-        if not 0.0 <= self.penalty_decrease <= 1.0:
+        if not (0.0 <= self.penalty_decrease <= 1.0):
             raise ValueError("Expected penalty_decrease in [0, 1].")
 
-        if not 0.0 <= self.target_feasible <= 1.0:
+        if not (0.0 <= self.target_feasible <= 1.0):
             raise ValueError("Expected target_feasible in [0, 1].")
-
-        if not self.repair_booster >= 1.0:
-            raise ValueError("Expected repair_booster >= 1.")
 
 
 class PenaltyManager:
@@ -113,21 +100,36 @@ class PenaltyManager:
     recent history, and can be used to provide a temporary penalty booster
     object that increases the penalties for a short duration.
 
+    .. note::
+
+       Consider initialising using :meth:`~init_from` to compute initial
+       penalty values that are scaled according to the data instance.
+
     Parameters
     ----------
     params
         PenaltyManager parameters. If not provided, a default will be used.
+    initial_penalties
+        Initial penalty values for unit load (idx 0), duration (1), and
+        distance (2) violations. Defaults to ``(20, 6, 6)`` for backwards
+        compatibility. These values are clipped to the range ``[MIN_PENALTY,
+        MAX_PENALTY]``.
     """
 
-    def __init__(self, params: PenaltyParams = PenaltyParams()):
-        self._params = params
+    MIN_PENALTY = 1
+    MAX_PENALTY = 100_000
+    FEAS_TOL = 0.05
 
-        self._penalties = np.array(
-            [
-                params.init_load_penalty,
-                params.init_time_warp_penalty,
-                params.init_dist_penalty,
-            ]
+    def __init__(
+        self,
+        params: PenaltyParams = PenaltyParams(),
+        initial_penalties: tuple[int, int, int] = (20, 6, 6),
+    ):
+        self._params = params
+        self._penalties = np.clip(
+            initial_penalties,
+            self.MIN_PENALTY,
+            self.MAX_PENALTY,
         )
 
         self._feas_lists: list[list[bool]] = [
@@ -136,17 +138,57 @@ class PenaltyManager:
             [],  # track recent distance feasibility
         ]
 
-    def _compute(
-        self,
-        penalty: int,
-        feas_percentage: float,
-        tolerance: float = 0.05,
-    ) -> int:
+    @classmethod
+    def init_from(
+        cls,
+        data: ProblemData,
+        params: PenaltyParams = PenaltyParams(),
+    ) -> PenaltyManager:
+        """
+        Initialises from the given data instance and parameter object. The
+        initial penalty values are computed from the problem data.
+
+        Parameters
+        ----------
+        data
+            Data instance to use when computing penalty values.
+        params
+            PenaltyManager parameters. If not provided, a default will be used.
+        """
+        distances = data.distance_matrices()
+        durations = data.duration_matrices()
+        edge_costs = [  # edge costs per vehicle type
+            veh_type.unit_distance_cost * distances[veh_type.profile]
+            + veh_type.unit_duration_cost * durations[veh_type.profile]
+            for veh_type in data.vehicle_types()
+        ]
+
+        # Best edge cost/distance/duration over all vehicle types and profiles,
+        # and then average that for the entire matrix to obtain an "average
+        # best" edge cost/distance/duration.
+        avg_cost = np.minimum.reduce(edge_costs).mean()
+        avg_distance = np.minimum.reduce(distances).mean()
+        avg_duration = np.minimum.reduce(durations).mean()
+
+        avg_load = 0
+        if data.num_clients != 0:
+            pickups = np.array([c.pickup for c in data.clients()])
+            deliveries = np.array([c.delivery for c in data.clients()])
+            avg_load = np.maximum(pickups, deliveries).mean()
+
+        # Initial penalty parameters are meant to weigh an average increase
+        # in the relevant value by the same amount as the average edge cost.
+        init_load = round(avg_cost / max(avg_load, 1))
+        init_tw = round(avg_cost / max(avg_duration, 1))
+        init_dist = round(avg_cost / max(avg_distance, 1))
+        return cls(params, (init_load, init_tw, init_dist))
+
+    def _compute(self, penalty: int, feas_percentage: float) -> int:
         # Computes and returns the new penalty value, given the current value
         # and the percentage of feasible solutions since the last update.
         diff = self._params.target_feasible - feas_percentage
 
-        if abs(diff) < tolerance:
+        if abs(diff) < self.FEAS_TOL:
             return penalty
 
         # +/- 1 to ensure we do not get stuck at the same integer values.
@@ -155,7 +197,19 @@ class PenaltyManager:
         else:
             new_penalty = self._params.penalty_decrease * penalty - 1
 
-        return int(np.clip(new_penalty, 1, 100_000))
+        clipped = int(np.clip(new_penalty, self.MIN_PENALTY, self.MAX_PENALTY))
+
+        if clipped == self.MAX_PENALTY:
+            msg = """
+            A penalty parameter has reached its maximum value. This means PyVRP
+            struggles to find a feasible solution for the instance that's being
+            solved, either because the instance has no feasible solution, or it
+            is very hard to find one. Check the instance carefully to determine
+            if a feasible solution exists.
+            """
+            warn(msg, PenaltyBoundWarning)
+
+        return clipped
 
     def _register(self, feas_list: list[bool], penalty: int, is_feas: bool):
         feas_list.append(is_feas)

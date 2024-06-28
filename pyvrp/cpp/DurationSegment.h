@@ -108,6 +108,9 @@ public:
     // Construct from attributes of the given client.
     DurationSegment(size_t idx, ProblemData::Client const &client);
 
+    // Construct from attributes of the given vehicle type.
+    DurationSegment(size_t depot, ProblemData::VehicleType const &vehicleType);
+
     // Construct from raw data.
     inline DurationSegment(size_t idxFirst,
                            size_t idxLast,
@@ -129,28 +132,38 @@ public:
 DurationSegment DurationSegment::merge(Matrix<Duration> const &durationMatrix,
                                        DurationSegment const &other) const
 {
+    // Because clients' default time windows are [0, INT_MAX], the ternaries in
+    // this method are carefully designed to avoid integer over- and underflow
+    // issues. Be very careful when changing things here!
     using Dur = pyvrp::Duration;
 
     // edgeDuration is the travel duration from our last to the other's first
-    // client, and atOther the time (after starting from our first client) at
-    // which we arrive there.
+    // client, and atOther the time (relative to our starting time) at which we
+    // arrive there.
     Dur const edgeDuration = durationMatrix(idxLast_, other.idxFirst_);
     Dur const atOther = duration_ - timeWarp_ + edgeDuration;
 
-    // Time warp increases if we arrive at the other's first client after its
-    // time window closes, whereas wait duration increases if we arrive there
-    // before opening.
-    Dur const diffTw = std::max<Dur>(twEarly_ + atOther - other.twLate_, 0);
+    // Time warp increases when we arrive at other after its time window closes.
+    Dur const diffTw = twEarly_ + atOther > other.twLate_
+                           ? twEarly_ + atOther - other.twLate_
+                           : 0;
+
+    // Wait duration increases if we arrive there before its time window opens.
     Dur const diffWait = other.twEarly_ - atOther > twLate_
                              ? other.twEarly_ - atOther - twLate_
-                             : 0;  // ternary rather than max avoids underflow
+                             : 0;
+
+    Dur const otherLate  // new twLate for the other segment
+        = atOther > other.twLate_ - std::numeric_limits<Dur>::max()
+              ? other.twLate_ - atOther
+              : other.twLate_;
 
     return {idxFirst_,
             other.idxLast_,
             duration_ + other.duration_ + edgeDuration + diffWait,
             timeWarp_ + other.timeWarp_ + diffTw,
             std::max(other.twEarly_ - atOther, twEarly_) - diffWait,
-            std::min(other.twLate_ - atOther, twLate_) + diffTw,
+            std::min(otherLate, twLate_) + diffTw,
             std::max(releaseTime_, other.releaseTime_)};
 }
 
@@ -177,11 +190,13 @@ Duration DurationSegment::duration() const { return duration_; }
 
 Duration DurationSegment::timeWarp(Duration const maxDuration) const
 {
-    // clang-format off
     return timeWarp_
-         + std::max<Duration>(releaseTime_ - twLate_, 0)
-         + std::max<Duration>(duration_ - maxDuration, 0);
-    // clang-format on
+           + std::max<Duration>(releaseTime_ - twLate_, 0)
+           // Max duration constraint applies only to net route duration,
+           // subtracting existing time warp. Use ternary to avoid underflow.
+           + (duration_ - timeWarp_ > maxDuration
+                  ? duration_ - timeWarp_ - maxDuration
+                  : 0);
 }
 
 DurationSegment::DurationSegment(size_t idxFirst,

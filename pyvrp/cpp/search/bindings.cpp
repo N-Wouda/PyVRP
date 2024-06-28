@@ -246,7 +246,8 @@ PYBIND11_MODULE(_search, m)
         .def("has_excess_distance", &Route::hasExcessDistance)
         .def("has_time_warp", &Route::hasTimeWarp)
         .def("capacity", &Route::capacity)
-        .def("depot", &Route::depot)
+        .def("start_depot", &Route::startDepot)
+        .def("end_depot", &Route::endDepot)
         .def("fixed_vehicle_cost", &Route::fixedVehicleCost)
         .def("load", &Route::load)
         .def("excess_load", &Route::excessLoad)
@@ -263,73 +264,74 @@ PYBIND11_MODULE(_search, m)
         .def("profile", &Route::profile)
         .def(
             "dist_at",
-            [](Route const &route, size_t idx)
-            { return static_cast<pyvrp::DistanceSegment>(route.at(idx)); },
-            py::arg("idx"))
+            [](Route const &route, size_t idx, size_t profile)
+            { return route.at(idx).distance(profile); },
+            py::arg("idx"),
+            py::arg("profile") = 0)
         .def(
             "dist_between",
-            [](Route const &route, size_t start, size_t end) {
-                return static_cast<pyvrp::DistanceSegment>(
-                    route.between(start, end));
-            },
+            [](Route const &route, size_t start, size_t end, size_t profile)
+            { return route.between(start, end).distance(profile); },
             py::arg("start"),
-            py::arg("end"))
+            py::arg("end"),
+            py::arg("profile") = 0)
         .def(
             "dist_after",
-            [](Route const &route, size_t start)
-            { return static_cast<pyvrp::DistanceSegment>(route.after(start)); },
-            py::arg("start"))
+            [](Route const &route, size_t start, size_t profile)
+            { return route.after(start).distance(profile); },
+            py::arg("start"),
+            py::arg("profile") = 0)
         .def(
             "dist_before",
-            [](Route const &route, size_t end)
-            { return static_cast<pyvrp::DistanceSegment>(route.before(end)); },
-            py::arg("end"))
+            [](Route const &route, size_t end, size_t profile)
+            { return route.before(end).distance(profile); },
+            py::arg("end"),
+            py::arg("profile") = 0)
         .def(
             "load_at",
-            [](Route const &route, size_t idx)
-            { return static_cast<pyvrp::LoadSegment>(route.at(idx)); },
+            [](Route const &route, size_t idx) { return route.at(idx).load(); },
             py::arg("idx"))
         .def(
             "load_between",
-            [](Route const &route, size_t start, size_t end) {
-                return static_cast<pyvrp::LoadSegment>(
-                    route.between(start, end));
-            },
+            [](Route const &route, size_t start, size_t end)
+            { return route.between(start, end).load(); },
             py::arg("start"),
             py::arg("end"))
         .def(
             "load_after",
             [](Route const &route, size_t start)
-            { return static_cast<pyvrp::LoadSegment>(route.after(start)); },
+            { return route.after(start).load(); },
             py::arg("start"))
         .def(
             "load_before",
             [](Route const &route, size_t end)
-            { return static_cast<pyvrp::LoadSegment>(route.before(end)); },
+            { return route.before(end).load(); },
             py::arg("end"))
         .def(
             "duration_at",
-            [](Route const &route, size_t idx)
-            { return static_cast<pyvrp::DurationSegment>(route.at(idx)); },
-            py::arg("idx"))
+            [](Route const &route, size_t idx, size_t profile)
+            { return route.at(idx).duration(profile); },
+            py::arg("idx"),
+            py::arg("profile") = 0)
         .def(
             "duration_between",
-            [](Route const &route, size_t start, size_t end) {
-                return static_cast<pyvrp::DurationSegment>(
-                    route.between(start, end));
-            },
+            [](Route const &route, size_t start, size_t end, size_t profile)
+            { return route.between(start, end).duration(profile); },
             py::arg("start"),
-            py::arg("end"))
+            py::arg("end"),
+            py::arg("profile") = 0)
         .def(
             "duration_after",
-            [](Route const &route, size_t start)
-            { return static_cast<pyvrp::DurationSegment>(route.after(start)); },
-            py::arg("start"))
+            [](Route const &route, size_t start, size_t profile)
+            { return route.after(start).duration(profile); },
+            py::arg("start"),
+            py::arg("profile") = 0)
         .def(
             "duration_before",
-            [](Route const &route, size_t end)
-            { return static_cast<pyvrp::DurationSegment>(route.before(end)); },
-            py::arg("end"))
+            [](Route const &route, size_t end, size_t profile)
+            { return route.before(end).duration(profile); },
+            py::arg("end"),
+            py::arg("profile") = 0)
         .def("centroid", &Route::centroid)
         .def("overlaps_with",
              &Route::overlapsWith,

@@ -1,8 +1,8 @@
 import math
 import pickle
 
+import pytest
 from numpy.testing import assert_, assert_allclose, assert_equal, assert_raises
-from pytest import mark
 
 from pyvrp import CostEvaluator, Population, RandomNumberGenerator, Solution
 from pyvrp.Result import Result
@@ -10,7 +10,7 @@ from pyvrp.Statistics import Statistics
 from pyvrp.diversity import broken_pairs_distance
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("routes", "num_iterations", "runtime"),
     [([[1, 2], [3], [4]], 1, 1.5), ([[1, 2, 3, 4]], 100, 54.2)],
 )
@@ -32,7 +32,7 @@ def test_fields_are_correctly_set(ok_small, routes, num_iterations, runtime):
         assert_equal(res.cost(), math.inf)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("num_iterations", "runtime"),
     [
         (-1, 0.0),  # num_iterations < 0
@@ -49,7 +49,7 @@ def test_init_raises_invalid_arguments(ok_small, num_iterations, runtime):
         Result(sol, Statistics(), num_iterations, runtime)
 
 
-@mark.parametrize("num_iterations", [0, 1, 10])
+@pytest.mark.parametrize("num_iterations", [0, 1, 10])
 def test_num_iterations(ok_small, num_iterations: int):
     """
     Tests access to the ``num_iterations`` property.
@@ -67,32 +67,54 @@ def test_num_iterations(ok_small, num_iterations: int):
     assert_equal(res.num_iterations, num_iterations)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "routes",
     [[[1, 2], [3], [4]], [[1, 2, 3, 4]]],
 )
-def test_str_contains_essential_information(ok_small, routes):
+def test_summary_contains_essential_information(ok_small, routes):
     """
-    Tests that printing (or, in general, calling ```str(result)``) returns a
-    bunch of useful information about the underlying solution.
+    Tests that calling ``summary()`` returns a summary of the solution.
+    """
+    sol = Solution(ok_small, routes)
+    res = Result(sol, Statistics(), 0, 0.0)
+    summary = res.summary()
+
+    # Test that feasibility status and solution cost are presented.
+    if sol.is_feasible():
+        cost = CostEvaluator(0, 0, 0).cost(sol)
+        assert_(str(cost) in summary)
+    else:
+        assert_("INFEASIBLE" in summary)
+
+    # Test that standard statistics are always present.
+    assert_(str(sol.num_routes()) in summary)
+    assert_(str(sol.num_clients()) in summary)
+    assert_(str(sol.distance()) in summary)
+    assert_(str(sol.duration()) in summary)
+
+
+@pytest.mark.parametrize(
+    "routes",
+    [[[1, 2], [3], [4]], [[1, 2, 3, 4]]],
+)
+def test_str_contains_summary_and_routes(ok_small, routes):
+    """
+    Tests that printing (or, in general, calling ``str(result)``) returns a
+    summary of the solution and the solution's routes.
     """
     sol = Solution(ok_small, routes)
     res = Result(sol, Statistics(), 0, 0.0)
     str_representation = str(res)
 
-    # Test that feasibility status and solution cost are presented.
-    if sol.is_feasible():
-        cost = CostEvaluator(0, 0, 0).cost(sol)
-        assert_(str(cost) in str_representation)
-    else:
-        assert_("INFEASIBLE" in str_representation)
+    # Test that the summary details are present in the string representation.
+    assert_(res.summary() in str_representation)
 
     # And make sure that all routes are printed as well.
     for route in sol.routes():
         assert_(str(route) in str_representation)
 
 
-@mark.parametrize("num_iterations", [0, 1, 10])
+@pytest.mark.parametrize("num_iterations", [0, 1, 10])
 def test_result_can_be_pickled(ok_small, num_iterations: int):
     """
     Tests that a ``Result`` object can be pickled: it can be serialised and

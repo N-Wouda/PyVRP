@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Generator, Optional
-from warnings import warn
 
 from pyvrp._pyvrp import PopulationParams, SubPopulation
-from pyvrp.exceptions import EmptySolutionWarning
 
 if TYPE_CHECKING:
     from pyvrp._pyvrp import CostEvaluator, RandomNumberGenerator, Solution
@@ -76,8 +74,14 @@ class Population:
 
     def add(self, solution: Solution, cost_evaluator: CostEvaluator):
         """
-        Adds the given solution to the population. Survivor selection is
-        automatically triggered when the population reaches its maximum size.
+        Inserts the given solution in the appropriate feasible or infeasible
+        (sub)population.
+
+        .. note::
+
+           Survivor selection is automatically triggered when the subpopulation
+           reaches its maximum size, given by
+           :attr:`~pyvrp.Population.PopulationParams.max_pop_size`.
 
         Parameters
         ----------
@@ -86,16 +90,6 @@ class Population:
         cost_evaluator
             CostEvaluator to use to compute the cost.
         """
-        if solution.num_clients() == 0:
-            msg = """
-            An empty solution is being added to the population. This typically
-            indicates that there is a significant difference between the values
-            of the prizes and the other objective terms, which hints at a data
-            problem. Note that not every part of PyVRP can work gracefully with
-            empty solutions.
-            """
-            warn(msg, EmptySolutionWarning)
-
         # Note: the CostEvaluator is required here since adding a solution
         # may trigger a purge which needs to compute the biased fitness which
         # requires computing the cost.

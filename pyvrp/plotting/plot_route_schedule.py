@@ -45,8 +45,7 @@ def plot_route_schedule(
     vehicle_type = data.vehicle_type(route.vehicle_type())
     distances = data.distance_matrix(vehicle_type.profile)
     durations = data.duration_matrix(vehicle_type.profile)
-    depot = data.location(route.depot())
-    horizon = depot.tw_late - depot.tw_early
+    horizon = vehicle_type.tw_late - vehicle_type.tw_early
 
     # Initialise tracking variables
     t = route.release_time()
@@ -73,9 +72,17 @@ def plot_route_schedule(
     add_traces(dist, t, drive_time, serv_time, load)
     add_traces(dist, t, drive_time, serv_time, load)
 
-    prev_idx = vehicle_type.depot
-    for idx in [*list(route), vehicle_type.depot]:
+    prev_idx = vehicle_type.start_depot
+    for idx in [*list(route), vehicle_type.end_depot]:
         stop = data.location(idx)
+
+        if isinstance(stop, Client):
+            tw_early = stop.tw_early
+            tw_late = stop.tw_late
+        else:
+            tw_early = vehicle_type.tw_early
+            tw_late = vehicle_type.tw_late
+
         delta_time = durations[prev_idx, idx]
         delta_dist = distances[prev_idx, idx]
         t += delta_time
@@ -84,13 +91,13 @@ def plot_route_schedule(
 
         add_traces(dist, t, drive_time, serv_time, load)
 
-        if t < stop.tw_early:
-            t = stop.tw_early
+        if t < tw_early:
+            t = tw_early
 
-        slack = min(slack, stop.tw_late - t)
-        if t > stop.tw_late:
-            timewarp_lines.append(((dist, t), (dist, stop.tw_late)))
-            t = stop.tw_late
+        slack = min(slack, tw_late - t)
+        if t > tw_late:
+            timewarp_lines.append(((dist, t), (dist, tw_late)))
+            t = tw_late
 
         if isinstance(stop, Client):
             load -= stop.delivery
@@ -104,9 +111,7 @@ def plot_route_schedule(
 
             add_traces(dist, t, drive_time, serv_time, load)
 
-            timewindow_lines.append(
-                ((dist, stop.tw_early), (dist, stop.tw_late))
-            )
+            timewindow_lines.append(((dist, tw_early), (dist, tw_late)))
 
         prev_idx = idx
 
@@ -140,7 +145,8 @@ def plot_route_schedule(
     )
     ax.add_collection(lc_timewarps)
     ax.set_ylim(
-        [depot.tw_early, max(depot.tw_late, max(t for d, t in trace_time))]
+        bottom=vehicle_type.tw_early,
+        top=max(vehicle_type.tw_late, max(t for _, t in trace_time)),
     )
 
     # Plot remaining load on second axis

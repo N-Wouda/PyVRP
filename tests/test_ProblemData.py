@@ -134,27 +134,6 @@ def test_raises_for_invalid_client_data(
         )
 
 
-@pytest.mark.parametrize(
-    ("x", "y", "tw_early", "tw_late"),
-    [
-        (0, 0, 1, 0),  # tw_early > tw_late
-        (0, 0, -1, 0),  # tw_early < 0
-        (0, 0, 0, -1),  # tw_late < 0
-    ],
-)
-def test_raises_for_invalid_depot_data(
-    x: int,
-    y: int,
-    tw_early: int,
-    tw_late: int,
-):
-    """
-    Tests that an invalid depot configuration is not accepted.
-    """
-    with assert_raises(ValueError):
-        Depot(x, y, tw_early, tw_late)
-
-
 def test_problem_data_raises_when_no_depot_is_provided():
     """
     Tests that the ``ProblemData`` constructor raises a ``ValueError`` when
@@ -366,11 +345,9 @@ def test_matrix_access():
     np.fill_diagonal(dist_mat, 0)
     np.fill_diagonal(dur_mat, 0)
 
-    depot = Depot(x=0, y=0, tw_late=10)
-    clients = [Client(x=0, y=0, tw_late=10) for _ in range(size - 1)]
     data = ProblemData(
-        clients=clients,
-        depots=[depot],
+        clients=[Client(x=0, y=0, tw_late=10) for _ in range(size - 1)],
+        depots=[Depot(x=0, y=0)],
         vehicle_types=[VehicleType(2, capacity=1)],
         distance_matrices=[dist_mat],
         duration_matrices=[dur_mat],
@@ -485,7 +462,6 @@ def test_vehicle_type_raises_invalid_data(
         VehicleType(
             num_available=num_available,
             capacity=capacity,
-            depot=0,
             fixed_cost=fixed_cost,
             tw_early=tw_early,
             tw_late=tw_late,
@@ -504,7 +480,8 @@ def test_vehicle_type_does_not_raise_for_all_zero_edge_case():
     vehicle_type = VehicleType(
         num_available=1,
         capacity=0,
-        depot=0,
+        start_depot=0,
+        end_depot=0,
         fixed_cost=0,
         tw_early=0,
         tw_late=0,
@@ -515,7 +492,8 @@ def test_vehicle_type_does_not_raise_for_all_zero_edge_case():
     )
 
     assert_equal(vehicle_type.num_available, 1)
-    assert_equal(vehicle_type.depot, 0)
+    assert_equal(vehicle_type.start_depot, 0)
+    assert_equal(vehicle_type.end_depot, 0)
     assert_equal(vehicle_type.capacity, 0)
     assert_equal(vehicle_type.fixed_cost, 0)
     assert_equal(vehicle_type.tw_early, 0)
@@ -533,7 +511,8 @@ def test_vehicle_type_default_values():
     """
     vehicle_type = VehicleType()
     assert_equal(vehicle_type.num_available, 1)
-    assert_equal(vehicle_type.depot, 0)
+    assert_equal(vehicle_type.start_depot, 0)
+    assert_equal(vehicle_type.end_depot, 0)
     assert_equal(vehicle_type.capacity, 0)
     assert_equal(vehicle_type.fixed_cost, 0)
     assert_equal(vehicle_type.tw_early, 0)
@@ -555,7 +534,8 @@ def test_vehicle_type_attribute_access():
     """
     vehicle_type = VehicleType(
         num_available=7,
-        depot=29,
+        start_depot=29,
+        end_depot=43,
         capacity=13,
         fixed_cost=3,
         tw_early=17,
@@ -568,7 +548,8 @@ def test_vehicle_type_attribute_access():
     )
 
     assert_equal(vehicle_type.num_available, 7)
-    assert_equal(vehicle_type.depot, 29)
+    assert_equal(vehicle_type.start_depot, 29)
+    assert_equal(vehicle_type.end_depot, 43)
     assert_equal(vehicle_type.capacity, 13)
     assert_equal(vehicle_type.fixed_cost, 3)
     assert_equal(vehicle_type.tw_early, 17)
@@ -595,15 +576,17 @@ def test_location_raises_invalid_index(ok_small, idx: int):
 
 
 @pytest.mark.parametrize(
-    ("depot", "should_raise"),
+    ("start_depot", "end_depot", "should_raise"),
     [
-        (0, False),  # correct index - should not raise
-        (1, True),  # index is the number of depots: too large; should raise
-        (2, True),  # index is too large; should raise
+        (0, 0, False),  # correct; index smaller than number of depots
+        (1, 0, True),  # index is too large; same as number of depots
+        (0, 1, True),  # index is too large; same as number of depots
+        (2, 0, True),  # index is too large; bigger than number of depots
+        (0, 2, True),  # index is too large; bigger than number of depots
     ],
 )
 def test_raises_invalid_vehicle_depot_indices(
-    ok_small, depot: int, should_raise: bool
+    ok_small, start_depot: int, end_depot: int, should_raise: bool
 ):
     """
     Tests that setting the depot index on a VehicleType to a value that's not
@@ -613,11 +596,13 @@ def test_raises_invalid_vehicle_depot_indices(
     assert_equal(ok_small.num_depots, 1)
 
     if not should_raise:
-        ok_small.replace(vehicle_types=[VehicleType(depot=depot)])
+        veh_types = [VehicleType(start_depot=start_depot, end_depot=end_depot)]
+        ok_small.replace(vehicle_types=veh_types)
         return
 
     with assert_raises(IndexError):
-        ok_small.replace(vehicle_types=[VehicleType(depot=depot)])
+        veh_types = [VehicleType(start_depot=start_depot, end_depot=end_depot)]
+        ok_small.replace(vehicle_types=veh_types)
 
 
 def test_raises_invalid_vehicle_profile_index(ok_small):

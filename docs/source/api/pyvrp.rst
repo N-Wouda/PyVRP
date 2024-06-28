@@ -111,8 +111,8 @@ This object can be used to obtain the best observed solution, and detailed runti
 
 .. automodule:: pyvrp.exceptions
 
-   .. autoexception:: EmptySolutionWarning
-
    .. autoexception:: ScalingWarning
 
    .. autoexception:: TspWarning
+
+   .. autoexception:: PenaltyBoundWarning

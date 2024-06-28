@@ -246,7 +246,10 @@ def test_evaluate_with_different_depots():
     data = ProblemData(
         clients=[Client(x=1, y=1), Client(x=4, y=4)],
         depots=[Depot(x=0, y=0), Depot(x=5, y=5)],
-        vehicle_types=[VehicleType(depot=0), VehicleType(depot=1)],
+        vehicle_types=[
+            VehicleType(start_depot=0, end_depot=0),
+            VehicleType(start_depot=1, end_depot=1),
+        ],
         distance_matrices=[
             [
                 [0, 10, 2, 8],
@@ -285,8 +288,13 @@ def test_different_objectives(ok_small_multi_depot):
     coefficients correctly evaluates the resulting cost delta.
     """
     vehicle_types = [
-        VehicleType(depot=0, unit_distance_cost=1, unit_duration_cost=0),
-        VehicleType(depot=1, unit_distance_cost=0, unit_duration_cost=1),
+        VehicleType(unit_duration_cost=0),
+        VehicleType(
+            start_depot=1,
+            end_depot=1,
+            unit_distance_cost=0,
+            unit_duration_cost=1,
+        ),
     ]
 
     data = ok_small_multi_depot.replace(vehicle_types=vehicle_types)

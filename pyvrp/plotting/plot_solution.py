@@ -49,7 +49,6 @@ def plot_solution(
 
         x = x_coords[route]
         y = y_coords[route]
-        depot = route.depot()
 
         # Coordinates of clients served by this route.
         if len(route) == 1 or plot_clients:
@@ -60,12 +59,20 @@ def plot_solution(
         # first client is given an arrow head to indicate route direction. We
         # don't do this for the edge returning to the depot because that adds a
         # lot of clutter at the depot.
+        start_depot = route.start_depot()
+        end_depot = route.end_depot()
+
         kwargs = dict(linewidth=0.25, color="grey")
-        ax.plot([x[-1], x_coords[depot]], [y[-1], y_coords[depot]], **kwargs)
+        ax.plot(
+            [x[-1], x_coords[end_depot]],
+            [y[-1], y_coords[end_depot]],
+            linewidth=0.25,
+            color="grey",
+        )
         ax.annotate(
             "",
             xy=(x[0], y[0]),
-            xytext=(x_coords[depot], y_coords[depot]),
+            xytext=(x_coords[start_depot], y_coords[start_depot]),
             arrowprops=dict(arrowstyle="-|>", **kwargs),
             zorder=1,
         )

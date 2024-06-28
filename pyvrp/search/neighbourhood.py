@@ -142,10 +142,11 @@ def _compute_proximity(
            large class of vehicle routing problems with time-windows.
            *Computers & Operations Research*, 40(1), 475 - 489.
     """
-    clients = [data.location(loc) for loc in range(data.num_locations)]
+    early = np.zeros((data.num_locations,))
+    early[data.num_depots :] = np.asarray([c.tw_early for c in data.clients()])
 
-    early = np.asarray([c.tw_early for c in clients])
-    late = np.asarray([c.tw_late for c in clients])
+    late = np.zeros((data.num_locations,))
+    late[data.num_depots :] = np.asarray([c.tw_late for c in data.clients()])
 
     service = np.zeros_like(early)
     service[data.num_depots :] = [c.service_duration for c in data.clients()]

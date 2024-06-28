@@ -71,11 +71,17 @@ public:
 
         std::pair<double, double> centroid_;  // Route center
         VehicleType vehicleType_;             // Type of vehicle
-        Depot depot_;                         // Assigned depot
+        Depot startDepot_;                    // Assigned start depot
+        Depot endDepot_;                      // Assigned end depot
 
     public:
         [[nodiscard]] bool empty() const;
+
+        /**
+         * Returns the number of clients visited by this route.
+         */
         [[nodiscard]] size_t size() const;
+
         [[nodiscard]] Client operator[](size_t idx) const;
 
         Visits::const_iterator begin() const;
@@ -202,13 +208,34 @@ public:
         [[nodiscard]] VehicleType vehicleType() const;
 
         /**
-         * Location index of the route's depot.
+         * Location index of the route's starting depot.
          */
-        [[nodiscard]] Depot depot() const;
+        [[nodiscard]] Depot startDepot() const;
 
+        /**
+         * Location index of the route's ending depot.
+         */
+        [[nodiscard]] Depot endDepot() const;
+
+        /**
+         * Returns whether this route is feasible.
+         */
         [[nodiscard]] bool isFeasible() const;
+
+        /**
+         * Returns whether this route violates capacity constraints.
+         */
         [[nodiscard]] bool hasExcessLoad() const;
+
+        /**
+         * Returns whether this route violates maximum distance constraints.
+         */
         [[nodiscard]] bool hasExcessDistance() const;
+
+        /**
+         * Returns whether this route violates time window or maximum duration
+         * constraints.
+         */
         [[nodiscard]] bool hasTimeWarp() const;
 
         bool operator==(Route const &other) const;
@@ -240,7 +267,8 @@ public:
               Cost prizes,
               std::pair<double, double> centroid,
               VehicleType vehicleType,
-              Depot depot);
+              Depot startDepot,
+              Depot endDepot);
     };
 
 private:
@@ -286,6 +314,13 @@ public:
 
     /**
      * Number of clients in this solution.
+     *
+     * .. warning::
+     *
+     *    An empty solution typically indicates that there is a significant
+     *    difference between the values of the prizes of the optional clients
+     *    and the other objective terms. This hints at a scaling issue in the
+     *    data.
      */
     [[nodiscard]] size_t numClients() const;
 
@@ -352,7 +387,8 @@ public:
     [[nodiscard]] bool hasExcessDistance() const;
 
     /**
-     * Returns whether this solution violates time window constraints.
+     * Returns whether this solution violates time window or maximum duration
+     * constraints.
      */
     [[nodiscard]] bool hasTimeWarp() const;
 

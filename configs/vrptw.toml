@@ -36,8 +36,6 @@ symmetric_neighbours = false
 
 
 [penalty]
-init_load_penalty = 20
-init_time_warp_penalty = 6
 repair_booster = 12
 solutions_between_updates = 50
 penalty_increase = 1.34

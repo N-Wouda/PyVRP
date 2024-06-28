@@ -112,7 +112,9 @@ public:
      *     time at which a vehicle may leave the depot to visit this client.
      *     Default 0.
      * prize
-     *     Prize collected by visiting this client. Default 0.
+     *     Prize collected by visiting this client. Default 0. If this client
+     *     is not required, the prize needs to be sufficiently large to offset
+     *     any travel cost before this client will be visited in a solution.
      * required
      *     Whether this client must be part of a feasible solution. Default
      *     True. Make sure to also update the prize value when setting this
@@ -256,8 +258,6 @@ public:
      * Depot(
      *    x: int,
      *    y: int,
-     *    tw_early: int = 0,
-     *    tw_late: int = np.iinfo(np.int64).max,
      *    *,
      *    name: str = "",
      * )
@@ -272,10 +272,6 @@ public:
      * y
      *     Vertical coordinate of this depot, that is, the 'y' part of the
      *     depot's (x, y) location tuple.
-     * tw_early
-     *     Opening time of this depot. Default 0.
-     * tw_late
-     *     Closing time of this depot. Default unconstrained.
      * name
      *     Free-form name field for this depot. Default empty.
      *
@@ -285,10 +281,6 @@ public:
      *     Horizontal coordinate of this depot.
      * y
      *     Vertical coordinate of this depot.
-     * tw_early
-     *     Opening time of this depot.
-     * tw_late
-     *     Closing time of this depot.
      * name
      *     Free-form name field for this depot.
      */
@@ -296,15 +288,9 @@ public:
     {
         Coordinate const x;
         Coordinate const y;
-        Duration const twEarly;  // Depot opening time
-        Duration const twLate;   // Depot closing time
-        char const *name;        // Depot name (for reference)
+        char const *name;  // Depot name (for reference)
 
-        Depot(Coordinate x,
-              Coordinate y,
-              Duration twEarly = 0,
-              Duration twLate = std::numeric_limits<Duration>::max(),
-              char const *name = "");
+        Depot(Coordinate x, Coordinate y, char const *name = "");
 
         Depot(Depot const &depot);
         Depot(Depot &&depot);
@@ -319,7 +305,8 @@ public:
      * VehicleType(
      *     num_available: int = 1,
      *     capacity: int = 0,
-     *     depot: int = 0,
+     *     start_depot: int = 0,
+     *     end_depot: int = 0,
      *     fixed_cost: int = 0,
      *     tw_early: int = 0,
      *     tw_late: int = np.iinfo(np.int64).max,
@@ -343,9 +330,12 @@ public:
      *     Capacity of this vehicle type. This is the maximum total delivery or
      *     pickup amount the vehicle can store along the route. Must be
      *     non-negative. Default 0.
-     * depot
-     *     Depot (location index) that vehicles of this type dispatch from, and
-     *     return to at the end of their routes. Default 0 (first depot).
+     * start_depot
+     *     Depot (location index) where vehicles of this type start their
+     *     routes. Default 0 (first depot).
+     * end_depot
+     *     Depot (location index) where vehicles of this type end routes.
+     *     Default 0 (first depot).
      * fixed_cost
      *     Fixed cost of using a vehicle of this type. Default 0.
      * tw_early
@@ -373,8 +363,10 @@ public:
      *     Number of vehicles of this type that are available.
      * capacity
      *     Capacity (maximum total demand) of this vehicle type.
-     * depot
-     *     Depot associated with these vehicles.
+     * start_depot
+     *     Start location associated with these vehicles.
+     * end_depot
+     *     End location associated with these vehicles.
      * fixed_cost
      *     Fixed cost of using a vehicle of this type.
      * tw_early
@@ -400,7 +392,8 @@ public:
     struct VehicleType
     {
         size_t const numAvailable;    // Available vehicles of this type
-        size_t const depot;           // Departure and return depot location
+        size_t const startDepot;      // Departure depot location
+        size_t const endDepot;        // Return depot location
         Load const capacity;          // This type's vehicle capacity
         Duration const twEarly;       // Start of shift
         Duration const twLate;        // End of shift
@@ -414,7 +407,8 @@ public:
 
         VehicleType(size_t numAvailable = 1,
                     Load capacity = 0,
-                    size_t depot = 0,
+                    size_t startDepot = 0,
+                    size_t endDepot = 0,
                     Cost fixedCost = 0,
                     Duration twEarly = 0,
                     Duration twLate = std::numeric_limits<Duration>::max(),

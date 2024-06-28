@@ -9,7 +9,7 @@ from numpy.testing import (
 
 from pyvrp import Client, ClientGroup, Depot, Model, Profile, VehicleType
 from pyvrp.constants import MAX_VALUE
-from pyvrp.exceptions import EmptySolutionWarning, ScalingWarning
+from pyvrp.exceptions import ScalingWarning
 from pyvrp.stop import MaxIterations
 
 
@@ -113,12 +113,9 @@ def test_add_depot_attributes():
     in.
     """
     model = Model()
-    depot = model.add_depot(x=1, y=0, tw_early=3, tw_late=5)
-
+    depot = model.add_depot(x=1, y=0)
     assert_equal(depot.x, 1)
     assert_equal(depot.y, 0)
-    assert_equal(depot.tw_early, 3)
-    assert_equal(depot.tw_late, 5)
 
 
 def test_add_edge():
@@ -161,10 +158,10 @@ def test_add_vehicle_type():
     assert_equal(vehicle_type.max_distance, 97)
 
 
-def test_add_vehicle_type_default_depot():
+def test_add_vehicle_type_default_depots():
     """
     Tests that ``Model.add_vehicle_type`` correctly sets the (default) depot
-    attribute on the vehicle type.
+    attributes on the vehicle type.
     """
     m = Model()
     depot1 = m.add_depot(x=0, y=0)
@@ -172,15 +169,23 @@ def test_add_vehicle_type_default_depot():
 
     # No depot specified: should default to the first (location index 0).
     vehicle_type1 = m.add_vehicle_type()
-    assert_equal(vehicle_type1.depot, 0)
+    assert_equal(vehicle_type1.start_depot, 0)
+    assert_equal(vehicle_type1.end_depot, 0)
 
     # First depot specified, should set first (location index 0).
-    vehicle_type2 = m.add_vehicle_type(depot=depot1)
-    assert_equal(vehicle_type2.depot, 0)
+    vehicle_type2 = m.add_vehicle_type(start_depot=depot1, end_depot=depot1)
+    assert_equal(vehicle_type2.start_depot, 0)
+    assert_equal(vehicle_type2.end_depot, 0)
 
     # Second depot specified, should set second (location index 1).
-    vehicle_type3 = m.add_vehicle_type(depot=depot2)
-    assert_equal(vehicle_type3.depot, 1)
+    vehicle_type3 = m.add_vehicle_type(start_depot=depot2, end_depot=depot2)
+    assert_equal(vehicle_type3.start_depot, 1)
+    assert_equal(vehicle_type3.start_depot, 1)
+
+    # A mix is also OK.
+    vehicle_type3 = m.add_vehicle_type(start_depot=depot1, end_depot=depot2)
+    assert_equal(vehicle_type3.start_depot, 0)
+    assert_equal(vehicle_type3.end_depot, 1)
 
 
 def test_add_vehicle_type_raises_for_unknown_depot():
@@ -192,7 +197,10 @@ def test_add_vehicle_type_raises_for_unknown_depot():
     depot = Depot(x=0, y=0)
 
     with assert_raises(ValueError):
-        m.add_vehicle_type(depot=depot)
+        m.add_vehicle_type(start_depot=depot)
+
+    with assert_raises(ValueError):
+        m.add_vehicle_type(end_depot=depot)
 
 
 def test_get_locations():
@@ -273,8 +281,14 @@ def test_model_and_solve(ok_small):
     # Now do the same thing, but model the instance using the modelling API.
     # This should of course result in the same solution.
     model = Model()
-    model.add_vehicle_type(num_available=3, capacity=10)
-    depot = model.add_depot(x=2334, y=726, tw_early=0, tw_late=45000)
+    model.add_vehicle_type(
+        num_available=3,
+        capacity=10,
+        tw_early=0,
+        tw_late=45000,
+    )
+
+    depot = model.add_depot(x=2334, y=726)
     clients = [
         model.add_client(226, 1297, 5, 0, 360, 15600, 22500),
         model.add_client(590, 530, 5, 0, 360, 12000, 19500),
@@ -404,9 +418,7 @@ def test_model_solves_instance_with_zero_or_one_clients():
     depot = m.add_depot(x=0, y=0)
 
     # Solve an instance with no clients.
-    with assert_warns(EmptySolutionWarning):
-        res = m.solve(stop=MaxIterations(1))
-
+    res = m.solve(stop=MaxIterations(1))
     solution = [r.visits() for r in res.best.routes()]
     assert_equal(solution, [])
 
@@ -430,9 +442,15 @@ def test_model_solves_small_instance_with_fixed_costs():
     m = Model()
 
     for idx in range(2):
-        m.add_vehicle_type(capacity=0, num_available=5, fixed_cost=10)
+        m.add_vehicle_type(
+            capacity=0,
+            num_available=5,
+            fixed_cost=10,
+            tw_early=0,
+            tw_late=40,
+        )
 
-    m.add_depot(x=0, y=0, tw_early=0, tw_late=40)
+    m.add_depot(x=0, y=0)
 
     for idx in range(5):
         m.add_client(x=idx, y=idx, service_duration=1, tw_early=0, tw_late=20)
@@ -465,7 +483,7 @@ def test_model_solves_small_instance_with_shift_durations():
             tw_late=tw_late,
         )
 
-    m.add_depot(x=0, y=0, tw_early=0, tw_late=40)
+    m.add_depot(x=0, y=0)
 
     for idx in range(5):
         # Vehicles of the first type can visit two clients before having to
@@ -501,8 +519,8 @@ def test_model_solves_line_instance_with_multiple_depots():
     depot1 = m.add_depot(x=0, y=0)  # location 0
     depot2 = m.add_depot(x=5, y=0)  # location 1
 
-    m.add_vehicle_type(1, depot=depot1)
-    m.add_vehicle_type(1, depot=depot2)
+    m.add_vehicle_type(1, start_depot=depot1, end_depot=depot1)
+    m.add_vehicle_type(1, start_depot=depot2, end_depot=depot2)
 
     for idx in range(1, 5):  # locations 2, 3, 4, and 5
         m.add_client(x=idx, y=0)
@@ -838,3 +856,35 @@ def test_profiles_build_on_base_edges():
     assert_equal(data.distance_matrix(1), [[0, 10], [2, 0]])
     assert_equal(data.duration_matrix(0), [[0, 10], [0, 0]])
     assert_equal(data.duration_matrix(1), [[0, 5], [0, 0]])
+
+
+def test_model_solves_instances_with_multiple_profiles():
+    """
+    Smoke test to check that the model knows how to solve an instance with
+    multiple profiles.
+    """
+    m = Model()
+    m.add_depot(x=1, y=1)
+    m.add_client(x=1, y=2)
+    m.add_client(x=2, y=1)
+
+    prof1 = m.add_profile()  # this profile only cares about distance on x axis
+    prof2 = m.add_profile()  # this one only about distance on y axis
+
+    for frm in m.locations:
+        for to in m.locations:
+            m.add_edge(frm, to, abs(frm.x - to.x), profile=prof1)
+            m.add_edge(frm, to, abs(frm.y - to.y), profile=prof2)
+
+    m.add_vehicle_type(1, profile=prof1)
+    m.add_vehicle_type(1, profile=prof2)
+
+    # The best we can do is have the first vehicle visit the first client (no
+    # distance), and the second vehicle the second client (also no distance).
+    # The resulting cost is thus zero.
+    res = m.solve(stop=MaxIterations(10))
+    assert_equal(res.cost(), 0)
+
+    route1, route2 = res.best.routes()
+    assert_equal(route1.visits(), [1])
+    assert_equal(route2.visits(), [2])

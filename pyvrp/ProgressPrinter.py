@@ -25,6 +25,8 @@ Solving an instance with:
 _END = """
 Search terminated in {runtime:.2f}s after {iters} iterations.
 Best-found solution has cost {best_cost}.
+
+{summary}
 """
 
 _RESTART = "R                 |        restart        |        restart"
@@ -119,6 +121,7 @@ class ProgressPrinter:
                 iters=result.num_iterations,
                 runtime=result.runtime,
                 best_cost=round(result.cost(), 2),
+                summary=result.summary(),
             )
             print(msg)
 

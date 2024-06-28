@@ -1,5 +1,6 @@
 import pytest
 
+from pyvrp import VehicleType
 from tests.helpers import read
 
 
@@ -87,3 +88,22 @@ def gtsp():
     Fixture that returns a medium-size generalized TSP instance.
     """
     return read("data/50pr439.gtsp", round_func="round")
+
+
+@pytest.fixture(scope="session")
+def ok_small_two_profiles():
+    """
+    Fixture that returns the OkSmall instance, with two profiles, the second
+    having double distance and duration of the first.
+    """
+    ok_small = read("data/OkSmall.txt")
+    distances = ok_small.distance_matrix(0)
+    durations = ok_small.duration_matrix(0)
+    return ok_small.replace(
+        duration_matrices=[durations, 2 * durations],
+        distance_matrices=[distances, 2 * distances],
+        vehicle_types=[
+            VehicleType(3, 10, profile=0),
+            VehicleType(3, 10, profile=1),
+        ],
+    )

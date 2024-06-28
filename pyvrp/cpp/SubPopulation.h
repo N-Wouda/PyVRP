@@ -20,8 +20,28 @@ namespace pyvrp
  *     ub_diversity: float = 0.5,
  * )
  *
- * Creates a parameters object to be used with
- * :class:`~pyvrp.Population.Population`.
+ * Parameter configuration for the :class:`~pyvrp.Population.Population`.
+ *
+ * Attributes
+ * ----------
+ * min_pop_size
+ *     Minimum subpopulation size. This is the size of the subpopulation after
+ *     survivor selection.
+ * generation_size
+ *     The size of a single generation, that is, the number of new solutions
+ *     inserted into a subpopulation between survivor selections.
+ * nb_elite
+ *     Number of elite solutions. This number of fittest solutions are always
+ *     survivors.
+ * nb_close
+ *     Number of close solutions. These are used to determine similarity
+ *     between solutions, which is an important component of fitness.
+ * lb_diversity
+ *     A lower bound on the diversity of the solutions selected for
+ *     tournament. See :meth:`~pyvrp.Population.Population.select` for details.
+ * ub_diversity
+ *     An upper bound on the diversity of the solutions selected for
+ *     tournament. See :meth:`~pyvrp.Population.Population.select` for details.
  */
 struct PopulationParams
 {
@@ -41,6 +61,9 @@ struct PopulationParams
 
     bool operator==(PopulationParams const &other) const = default;
 
+    /**
+     * Returns the maximum subpopulation size.
+     */
     size_t maxPopSize() const;
 };
 

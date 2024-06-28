@@ -30,12 +30,12 @@ namespace pyvrp::search
  */
 class Route
 {
-    // These proxy classes (defined further below) handle transparent access
-    // to the route's segment-specific statistics.
-    friend class ProxyAt;
-    friend class ProxyAfter;
-    friend class ProxyBefore;
-    friend class ProxyBetween;
+    // These classes (defined further below) handle transparent access to the
+    // route's segment-specific concatenation schemes.
+    friend class SegmentAt;
+    friend class SegmentAfter;
+    friend class SegmentBefore;
+    friend class SegmentBetween;
 
 public:
     /**
@@ -104,68 +104,67 @@ public:
 
 private:
     /**
-     * Proxy class for querying data related to a single location in the route,
-     * identified by ``idx``.
+     * Class storing data related to the route location at ``idx``.
      */
-    class ProxyAt
+    class SegmentAt
     {
         Route const *route;
         size_t const idx;
 
     public:
-        inline ProxyAt(Route const &route, size_t idx);
-        inline operator DistanceSegment const &() const;
-        inline operator DurationSegment const &() const;
-        inline operator LoadSegment const &() const;
+        inline SegmentAt(Route const &route, size_t idx);
+        inline DistanceSegment distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment load() const;
     };
 
     /**
-     * Proxy class for querying data related to the route segment starting at
-     * ``start``, and ending at the depot (inclusive).
+     * Class storing data related to the route segment starting at ``start``,
+     * and ending at the depot (inclusive).
      */
-    class ProxyAfter
+    class SegmentAfter
     {
         Route const *route;
         size_t const start;
 
     public:
-        inline ProxyAfter(Route const &route, size_t start);
-        inline operator DistanceSegment const &() const;
-        inline operator DurationSegment const &() const;
-        inline operator LoadSegment const &() const;
+        inline SegmentAfter(Route const &route, size_t start);
+        inline DistanceSegment distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment load() const;
     };
 
     /**
-     * Proxy class for querying data related to the route segment starting at
-     * the depot, and ending at ``end`` (inclusive).
+     * Class storing data related to the route segment starting at the depot,
+     * and ending at ``end`` (inclusive).
      */
-    class ProxyBefore
+    class SegmentBefore
     {
         Route const *route;
         size_t const end;
 
     public:
-        inline ProxyBefore(Route const &route, size_t end);
-        inline operator DistanceSegment const &() const;
-        inline operator DurationSegment const &() const;
-        inline operator LoadSegment const &() const;
+        inline SegmentBefore(Route const &route, size_t end);
+        inline DistanceSegment distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment load() const;
     };
 
     /**
-     * Proxy class for querying data related to the route segment starting at
-     * ``start``, and ending at ``end`` (inclusive).
+     * Class storing data related to the route segment starting at ``start``,
+     * and ending at ``end`` (inclusive).
      */
-    class ProxyBetween
+    class SegmentBetween
     {
         Route const *route;
         size_t const start;
         size_t const end;
 
     public:
-        inline ProxyBetween(Route const &route, size_t start, size_t end);
-        inline operator DistanceSegment() const;
-        inline operator DurationSegment() const;
-        inline operator LoadSegment() const;
+        inline SegmentBetween(Route const &route, size_t start, size_t end);
+        inline DistanceSegment distance(size_t profile) const;
+        inline DurationSegment duration(size_t profile) const;
+        inline LoadSegment load() const;
     };
 
     ProblemData const &data;
@@ -180,8 +179,8 @@ private:
     std::vector<Node *> nodes;  // Nodes in this route, including depots
     std::pair<double, double> centroid_;  // Center point of route's clients
 
-    Node startDepot;  // Departure depot for this route
-    Node endDepot;    // Return depot for this route
+    Node startDepot_;  // Departure depot for this route
+    Node endDepot_;    // Return depot for this route
 
     std::vector<DistanceSegment> distAt;      // Dist data at each node
     std::vector<DistanceSegment> distBefore;  // Dist of depot -> client (incl.)
@@ -283,9 +282,14 @@ public:
     [[nodiscard]] inline Load capacity() const;
 
     /**
-     * @return The location index of this route's depot.
+     * @return The location index of this route's starting depot.
      */
-    [[nodiscard]] inline size_t depot() const;
+    [[nodiscard]] inline size_t startDepot() const;
+
+    /**
+     * @return The location index of this route's ending depot.
+     */
+    [[nodiscard]] inline size_t endDepot() const;
 
     /**
      * @return The fixed cost of the vehicle servicing this route.
@@ -355,28 +359,28 @@ public:
     [[nodiscard]] inline size_t size() const;
 
     /**
-     * Returns a proxy object that can be queried for data associated with
-     * the node at idx.
+     * Returns an object that can be queried for data associated with the node
+     * at idx.
      */
-    [[nodiscard]] inline ProxyAt at(size_t idx) const;
+    [[nodiscard]] inline SegmentAt at(size_t idx) const;
 
     /**
-     * Returns a proxy object that can be queried for data associated with
-     * the segment starting at start.
+     * Returns an object that can be queried for data associated with the
+     * segment starting at start.
      */
-    [[nodiscard]] inline ProxyAfter after(size_t start) const;
+    [[nodiscard]] inline SegmentAfter after(size_t start) const;
 
     /**
-     * Returns a proxy object that can be queried for data associated with
-     * the segment ending at end.
+     * Returns an object that can be queried for data associated with the
+     * segment ending at end.
      */
-    [[nodiscard]] inline ProxyBefore before(size_t end) const;
+    [[nodiscard]] inline SegmentBefore before(size_t end) const;
 
     /**
-     * Returns a proxy object that can be queried for data associated with
-     * the segment between [start, end].
+     * Returns an object that can be queried for data associated with the
+     * segment between [start, end].
      */
-    [[nodiscard]] inline ProxyBetween between(size_t start, size_t end) const;
+    [[nodiscard]] inline SegmentBetween between(size_t start, size_t end) const;
 
     /**
      * Center point of the client locations on this route.
@@ -462,77 +466,108 @@ bool Route::Node::isDepot() const
     return route_ && (idx_ == 0 || idx_ == route_->size() + 1);
 }
 
-Route::ProxyAt::ProxyAt(Route const &route, size_t idx)
+Route::SegmentAt::SegmentAt(Route const &route, size_t idx)
     : route(&route), idx(idx)
 {
     assert(idx < route.nodes.size());
 }
 
-Route::ProxyAfter::ProxyAfter(Route const &route, size_t start)
+Route::SegmentAfter::SegmentAfter(Route const &route, size_t start)
     : route(&route), start(start)
 {
     assert(start < route.nodes.size());
 }
 
-Route::ProxyBefore::ProxyBefore(Route const &route, size_t end)
+Route::SegmentBefore::SegmentBefore(Route const &route, size_t end)
     : route(&route), end(end)
 {
     assert(end < route.nodes.size());
 }
 
-Route::ProxyBetween::ProxyBetween(Route const &route, size_t start, size_t end)
+Route::SegmentBetween::SegmentBetween(Route const &route,
+                                      size_t start,
+                                      size_t end)
     : route(&route), start(start), end(end)
 {
     assert(start <= end && end < route.nodes.size());
 }
 
-Route::ProxyAt::operator DistanceSegment const &() const
+DistanceSegment
+Route::SegmentAt::distance([[maybe_unused]] size_t profile) const
 {
     return route->distAt[idx];
 }
 
-Route::ProxyAt::operator pyvrp::DurationSegment const &() const
+DurationSegment
+Route::SegmentAt::duration([[maybe_unused]] size_t profile) const
 {
     return route->durAt[idx];
 }
 
-Route::ProxyAt::operator pyvrp::LoadSegment const &() const
+LoadSegment Route::SegmentAt::load() const { return route->loadAt[idx]; }
+
+DistanceSegment Route::SegmentAfter::distance(size_t profile) const
 {
-    return route->loadAt[idx];
+    if (profile == route->profile())
+        return route->distAfter[start];
+
+    auto const between = SegmentBetween(*route, start, route->size() + 1);
+    return between.distance(profile);
 }
 
-Route::ProxyAfter::operator pyvrp::DistanceSegment const &() const
+DurationSegment Route::SegmentAfter::duration(size_t profile) const
 {
-    return route->distAfter[start];
+    if (profile == route->profile())
+        return route->durAfter[start];
+
+    auto const between = SegmentBetween(*route, start, route->size() + 1);
+    return between.duration(profile);
 }
 
-Route::ProxyAfter::operator pyvrp::DurationSegment const &() const
-{
-    return route->durAfter[start];
-}
-
-Route::ProxyAfter::operator pyvrp::LoadSegment const &() const
+LoadSegment Route::SegmentAfter::load() const
 {
     return route->loadAfter[start];
 }
 
-Route::ProxyBefore::operator pyvrp::DistanceSegment const &() const
+DistanceSegment Route::SegmentBefore::distance(size_t profile) const
 {
-    return route->distBefore[end];
+    if (profile == route->profile())
+        return route->distBefore[end];
+
+    auto const between = SegmentBetween(*route, size_t(0), end);
+    return between.distance(profile);
 }
 
-Route::ProxyBefore::operator pyvrp::DurationSegment const &() const
+DurationSegment Route::SegmentBefore::duration(size_t profile) const
 {
-    return route->durBefore[end];
+    if (profile == route->profile())
+        return route->durBefore[end];
+
+    auto const between = SegmentBetween(*route, size_t(0), end);
+    return between.duration(profile);
 }
 
-Route::ProxyBefore::operator pyvrp::LoadSegment const &() const
+LoadSegment Route::SegmentBefore::load() const
 {
     return route->loadBefore[end];
 }
 
-Route::ProxyBetween::operator DistanceSegment() const
+DistanceSegment Route::SegmentBetween::distance(size_t profile) const
 {
+    if (profile != route->profile())  // then we have to compute the distance
+    {                                 // segment from scratch.
+        auto distSegment = route->distAt[start];
+
+        for (size_t step = start; step != end; ++step)
+        {
+            auto const &mat = route->data.distanceMatrix(profile);
+            auto const &distAt = route->distAt[step + 1];
+            distSegment = DistanceSegment::merge(mat, distSegment, distAt);
+        }
+
+        return distSegment;
+    }
+
     auto const &startDist = route->distBefore[start];
     auto const &endDist = route->distBefore[end];
 
@@ -542,20 +577,21 @@ Route::ProxyBetween::operator DistanceSegment() const
                            endDist.distance() - startDist.distance());
 }
 
-Route::ProxyBetween::operator DurationSegment() const
+DurationSegment Route::SegmentBetween::duration(size_t profile) const
 {
     auto durSegment = route->durAt[start];
 
     for (size_t step = start; step != end; ++step)
-        durSegment = DurationSegment::merge(
-            route->data.durationMatrix(route->profile()),
-            durSegment,
-            route->durAt[step + 1]);
+    {
+        auto const &mat = route->data.durationMatrix(profile);
+        auto const &durAt = route->durAt[step + 1];
+        durSegment = DurationSegment::merge(mat, durSegment, durAt);
+    }
 
     return durSegment;
 }
 
-Route::ProxyBetween::operator LoadSegment() const
+LoadSegment Route::SegmentBetween::load() const
 {
     auto loadSegment = route->loadAt[start];
 
@@ -627,7 +663,9 @@ Distance Route::excessDistance() const
 
 Load Route::capacity() const { return vehicleType_.capacity; }
 
-size_t Route::depot() const { return vehicleType_.depot; }
+size_t Route::startDepot() const { return vehicleType_.startDepot; }
+
+size_t Route::endDepot() const { return vehicleType_.endDepot; }
 
 Cost Route::fixedVehicleCost() const { return vehicleType_.fixedCost; }
 
@@ -679,28 +717,28 @@ size_t Route::size() const
     return nodes.size() - 2;
 }
 
-Route::ProxyAt Route::at(size_t idx) const
+Route::SegmentAt Route::at(size_t idx) const
 {
     assert(!dirty);
-    return ProxyAt(*this, idx);
+    return SegmentAt(*this, idx);
 }
 
-Route::ProxyAfter Route::after(size_t start) const
+Route::SegmentAfter Route::after(size_t start) const
 {
     assert(!dirty);
-    return ProxyAfter(*this, start);
+    return SegmentAfter(*this, start);
 }
 
-Route::ProxyBefore Route::before(size_t end) const
+Route::SegmentBefore Route::before(size_t end) const
 {
     assert(!dirty);
-    return ProxyBefore(*this, end);
+    return SegmentBefore(*this, end);
 }
 
-Route::ProxyBetween Route::between(size_t start, size_t end) const
+Route::SegmentBetween Route::between(size_t start, size_t end) const
 {
     assert(!dirty);
-    return ProxyBetween(*this, start, end);
+    return SegmentBetween(*this, start, end);
 }
 
 template <typename... Segments>
@@ -726,7 +764,8 @@ DistanceSegment Route::Proposal<Segments...>::distanceSegment() const
         [&](auto &&...args)
         {
             return DistanceSegment::merge(
-                data.distanceMatrix(current->profile()), args...);
+                data.distanceMatrix(current->profile()),
+                args.distance(current->profile())...);
         },
         segments);
 }
@@ -738,7 +777,8 @@ DurationSegment Route::Proposal<Segments...>::durationSegment() const
         [&](auto &&...args)
         {
             return DurationSegment::merge(
-                data.durationMatrix(current->profile()), args...);
+                data.durationMatrix(current->profile()),
+                args.duration(current->profile())...);
         },
         segments);
 }
@@ -746,8 +786,9 @@ DurationSegment Route::Proposal<Segments...>::durationSegment() const
 template <typename... Segments>
 LoadSegment Route::Proposal<Segments...>::loadSegment() const
 {
-    return std::apply(
-        [](auto &&...args) { return LoadSegment::merge(args...); }, segments);
+    return std::apply([](auto &&...args)
+                      { return LoadSegment::merge(args.load()...); },
+                      segments);
 }
 
 }  // namespace pyvrp::search

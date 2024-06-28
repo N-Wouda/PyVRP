@@ -56,20 +56,32 @@ class Result:
         """
         return self.best.is_feasible()
 
-    def __str__(self) -> str:
-        obj_str = f"{self.cost():.2f}" if self.is_feasible() else "INFEASIBLE"
+    def summary(self) -> str:
+        """
+        Returns a nicely formatted result summary.
+        """
+        obj_str = f"{self.cost()}" if self.is_feasible() else "INFEASIBLE"
         summary = [
             "Solution results",
             "================",
             f"    # routes: {self.best.num_routes()}",
             f"   # clients: {self.best.num_clients()}",
             f"   objective: {obj_str}",
+            f"    distance: {self.best.distance()}",
+            f"    duration: {self.best.duration()}",
             f"# iterations: {self.num_iterations}",
             f"    run-time: {self.runtime:.2f} seconds",
+        ]
+
+        return "\n".join(summary)
+
+    def __str__(self) -> str:
+        content = [
+            self.summary(),
             "",
             "Routes",
             "------",
             str(self.best),
         ]
 
-        return "\n".join(summary)
+        return "\n".join(content)

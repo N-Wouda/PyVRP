@@ -17,18 +17,18 @@ public:
     {
     }
 
-    operator pyvrp::DistanceSegment() const
+    pyvrp::DistanceSegment distance([[maybe_unused]] size_t profile) const
     {
         return pyvrp::DistanceSegment(client);
     }
 
-    operator pyvrp::DurationSegment() const
+    pyvrp::DurationSegment duration([[maybe_unused]] size_t profile) const
     {
         pyvrp::ProblemData::Client const &clientData = data.location(client);
         return pyvrp::DurationSegment(client, clientData);
     }
 
-    operator pyvrp::LoadSegment() const
+    pyvrp::LoadSegment load() const
     {
         pyvrp::ProblemData::Client const &clientData = data.location(client);
         return pyvrp::LoadSegment(clientData);

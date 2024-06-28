@@ -28,6 +28,13 @@ These best-known solutions are tracked in the `PyVRP/Instances <https://github.c
      - PCVRPTW
      - MDVRPTW
      - VRPB
+   * - 27 June 2024
+     - `0.9.0 <https://github.com/PyVRP/PyVRP/tree/e74c9b19915c308aae6374fab8507a0f0e48ec72>`_
+     - 0.24%
+     - 0.61%
+     - 0.41%
+     - 1.01%
+     - 0.40%
    * - 22 March 2024
      - `0.8.0 <https://github.com/PyVRP/PyVRP/tree/75e4fd4f5a449f11d4974164ce84a170a53b8221>`_
      - 0.23%
@@ -102,11 +109,11 @@ The reported values represent the average gaps to the best-known solutions (at t
      - PCVRPTW
      - MDVRPTW
      - VRPB
-   * - 11 February 2024
+   * - 20 May 2024
      - `Google OR-Tools <https://developers.google.com/optimization/routing>`_ [#note3]_
-     - 5.23%
-     - 10.86%
-     - 13.24%
+     - 4.42%
+     - 9.38%
+     - 10.72%
      -
      -
    * - 28 February 2023
@@ -152,7 +159,7 @@ The reported values represent the average gaps to the best-known solutions (at t
    The best-known solutions have been updated to address this issue.
 
 .. [#note3]
-   Results obtained using Google OR-Tools `v9.8.3296 <https://pypi.org/project/ortools/9.8.3296/>`_.
+   Results obtained using Google OR-Tools `v9.10.4067 <https://pypi.org/project/ortools/9.10.4067/>`_.
    The reported average gap is over only one seed, because there is no interface to set the seed.
    The code used to benchmark Google OR-tools can be found in `this issue <https://github.com/PyVRP/PyVRP/issues/453>`_.
 

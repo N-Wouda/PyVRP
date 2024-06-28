@@ -145,35 +145,18 @@ void ProblemData::ClientGroup::addClient(size_t client)
 
 void ProblemData::ClientGroup::clear() { clients_.clear(); }
 
-ProblemData::Depot::Depot(Coordinate x,
-                          Coordinate y,
-                          Duration twEarly,
-                          Duration twLate,
-                          char const *name)
-    : x(x), y(y), twEarly(twEarly), twLate(twLate), name(duplicate(name))
+ProblemData::Depot::Depot(Coordinate x, Coordinate y, char const *name)
+    : x(x), y(y), name(duplicate(name))
 {
-    if (twEarly > twLate)
-        throw std::invalid_argument("tw_early must be <= tw_late.");
-
-    if (twEarly < 0)
-        throw std::invalid_argument("tw_early must be >= 0.");
 }
 
 ProblemData::Depot::Depot(Depot const &depot)
-    : x(depot.x),
-      y(depot.y),
-      twEarly(depot.twEarly),
-      twLate(depot.twLate),
-      name(duplicate(depot.name))
+    : x(depot.x), y(depot.y), name(duplicate(depot.name))
 {
 }
 
 ProblemData::Depot::Depot(Depot &&depot)
-    : x(depot.x),
-      y(depot.y),
-      twEarly(depot.twEarly),
-      twLate(depot.twLate),
-      name(depot.name)  // we can steal
+    : x(depot.x), y(depot.y), name(depot.name)  // we can steal
 {
     depot.name = nullptr;  // stolen
 }
@@ -182,7 +165,8 @@ ProblemData::Depot::~Depot() { delete[] name; }
 
 ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       Load capacity,
-                                      size_t depot,
+                                      size_t startDepot,
+                                      size_t endDepot,
                                       Cost fixedCost,
                                       Duration twEarly,
                                       Duration twLate,
@@ -193,7 +177,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       size_t profile,
                                       char const *name)
     : numAvailable(numAvailable),
-      depot(depot),
+      startDepot(startDepot),
+      endDepot(endDepot),
       capacity(capacity),
       twEarly(twEarly),
       twLate(twLate),
@@ -235,7 +220,8 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
 
 ProblemData::VehicleType::VehicleType(VehicleType const &vehicleType)
     : numAvailable(vehicleType.numAvailable),
-      depot(vehicleType.depot),
+      startDepot(vehicleType.startDepot),
+      endDepot(vehicleType.endDepot),
       capacity(vehicleType.capacity),
       twEarly(vehicleType.twEarly),
       twLate(vehicleType.twLate),
@@ -251,7 +237,8 @@ ProblemData::VehicleType::VehicleType(VehicleType const &vehicleType)
 
 ProblemData::VehicleType::VehicleType(VehicleType &&vehicleType)
     : numAvailable(vehicleType.numAvailable),
-      depot(vehicleType.depot),
+      startDepot(vehicleType.startDepot),
+      endDepot(vehicleType.endDepot),
       capacity(vehicleType.capacity),
       twEarly(vehicleType.twEarly),
       twLate(vehicleType.twLate),
@@ -389,8 +376,11 @@ void ProblemData::validate() const
     // Vehicle type checks.
     for (auto const &vehicleType : vehicleTypes_)
     {
-        if (vehicleType.depot >= numDepots())
-            throw std::out_of_range("Vehicle type has invalid depot.");
+        if (vehicleType.startDepot >= numDepots())
+            throw std::out_of_range("Vehicle type has invalid start depot.");
+
+        if (vehicleType.endDepot >= numDepots())
+            throw std::out_of_range("Vehicle type has invalid end depot.");
 
         if (vehicleType.profile >= dists_.size())
             throw std::out_of_range("Vehicle type has invalid profile.");

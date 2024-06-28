@@ -27,16 +27,15 @@ def plot_time_windows(
     if not ax:
         _, ax = plt.subplots()
 
-    tw = np.array(
-        [
-            [data.location(loc).tw_early, data.location(loc).tw_late]
-            for loc in range(data.num_locations)
-        ]
-    )
+    tw = np.array([[c.tw_early, c.tw_late] for c in data.clients()])
+
     # Lexicographic sort so for equal start we get shorter TW first
     tw = tw[np.lexsort((tw[:, 1], tw[:, 0]))]
 
-    lines = [((i, early), (i, late)) for i, (early, late) in enumerate(tw)]
+    lines = [
+        ((loc, early), (loc, late))
+        for loc, (early, late) in enumerate(tw, data.num_depots - 1)
+    ]
     ax.add_collection(LineCollection(lines, linewidths=1))
     ax.set_xlim([0, data.num_locations])
     ax.set_ylim([tw.min(), tw.max()])

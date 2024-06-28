@@ -229,8 +229,8 @@ def test_relocate_only_happens_when_distance_and_duration_allow_it():
             Client(x=1, y=0, tw_early=0, tw_late=5),
             Client(x=2, y=0, tw_early=0, tw_late=5),
         ],
-        depots=[Depot(x=0, y=0, tw_early=0, tw_late=10)],
-        vehicle_types=[VehicleType(1)],
+        depots=[Depot(x=0, y=0)],
+        vehicle_types=[VehicleType(1, tw_early=0, tw_late=10)],
         distance_matrices=[
             np.asarray(
                 [
@@ -354,10 +354,10 @@ def test_relocate_fixed_vehicle_cost(ok_small, op, base_cost, fixed_cost):
 @pytest.mark.parametrize(
     ("op", "max_dur", "cost"),
     [
-        (Exchange20, 0, -841),
-        (Exchange20, 5_000, 4_159),
-        (Exchange21, 0, -2_780),
-        (Exchange21, 5_000, -1_410),
+        (Exchange20, 0, -4_044),
+        (Exchange20, 5_000, 956),
+        (Exchange21, 0, -693),
+        (Exchange21, 5_000, -596),
     ],
 )
 def test_exchange_with_max_duration_constraint(ok_small, op, max_dur, cost):
@@ -380,10 +380,13 @@ def test_exchange_with_max_duration_constraint(ok_small, op, max_dur, cost):
         route2.append(Node(loc=loc))
     route2.update()
 
-    # Both routes are substantially longer than 5K duration units. So there's
-    # always a max duration violation. Consolidation - either into a single
-    # route, or more into the same route - is typically improving, especially
-    # when the maximum duration violations are significant.
+    # Without maximum duration, route1 has a duration of 5_229 and no time warp
+    # while route2 has a duration of 5_814 and timewarp 2_087, for a net
+    # duration of 5_814 - 2_087 = 3_727 so no violation.
+    # Consolidation into a single route may or may not be improving as the
+    # total distance decreases but the maximum duration violation increases.
+    # Moving from the first to the second route reduces the maximum duration
+    # violation in the first route and is typically improving.
     assert_equal(route1.duration(), 5_229)
     assert_equal(route2.duration(), 5_814)
 
@@ -543,3 +546,29 @@ def test_swap_max_distance(ok_small, max_distance: int, expected: int):
         ]
     )
     assert_equal(delta_dist + 10 * delta_excess, expected)
+
+
+def test_swap_with_different_profiles(ok_small_two_profiles):
+    """
+    Tests that swap correctly evaluates moves between routes with different
+    profiles.
+    """
+    data = ok_small_two_profiles
+
+    route1 = Route(data, idx=0, vehicle_type=0)
+    route1.append(Node(loc=3))
+    route1.update()
+
+    route2 = Route(data, idx=1, vehicle_type=1)
+    route2.append(Node(loc=4))
+    route2.update()
+
+    op = Exchange11(data)
+    cost_eval = CostEvaluator(0, 0, 0)  # all zero so no costs from penalties
+
+    # This move evaluates swapping loc 3 and 4 between routes. The cost delta
+    # is as follows, taking into account the different profiles' distances.
+    dist1, dist2 = data.distance_matrices()
+    delta = dist1[0, 4] + dist1[4, 0] + dist2[0, 3] + dist2[3, 0]
+    delta -= route1.distance() + route2.distance()
+    assert_equal(op.evaluate(route1[1], route2[1], cost_eval), delta)

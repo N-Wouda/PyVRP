@@ -1,5 +1,7 @@
 #include "DurationSegment.h"
 
+#include <cassert>
+
 using pyvrp::Duration;
 using pyvrp::DurationSegment;
 
@@ -18,4 +20,17 @@ DurationSegment::DurationSegment(size_t idx, ProblemData::Client const &client)
       twLate_(client.twLate),
       releaseTime_(client.releaseTime)
 {
+}
+
+DurationSegment::DurationSegment(size_t depot,
+                                 ProblemData::VehicleType const &vehicleType)
+    : idxFirst_(depot),
+      idxLast_(depot),
+      duration_(0),
+      timeWarp_(0),
+      twEarly_(vehicleType.twEarly),
+      twLate_(vehicleType.twLate),
+      releaseTime_(0)
+{
+    assert(depot == vehicleType.startDepot || depot == vehicleType.endDepot);
 }

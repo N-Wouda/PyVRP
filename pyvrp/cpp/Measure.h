@@ -207,12 +207,12 @@ template <pyvrp::MeasureType Type>
 class std::numeric_limits<pyvrp::Measure<Type>>
 {
 public:
-    static pyvrp::Value max()
+    static pyvrp::Measure<Type> max()
     {
         return std::numeric_limits<pyvrp::Value>::max();
     }
 
-    static pyvrp::Value min()
+    static pyvrp::Measure<Type> min()
     {
         return std::numeric_limits<pyvrp::Value>::min();
     }

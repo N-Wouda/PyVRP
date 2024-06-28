@@ -4,7 +4,6 @@ from numpy.testing import (
     assert_allclose,
     assert_equal,
     assert_raises,
-    assert_warns,
 )
 from pytest import mark
 
@@ -16,7 +15,6 @@ from pyvrp import (
     Solution,
 )
 from pyvrp.diversity import broken_pairs_distance as bpd
-from pyvrp.exceptions import EmptySolutionWarning
 
 
 @mark.parametrize(
@@ -371,16 +369,3 @@ def test_clear(rc208):
 
     pop.clear()
     assert_equal(len(pop), 0)
-
-
-def test_add_emits_warning_when_solution_is_empty(prize_collecting):
-    """
-    Tests that adding an empty solution to the population emits a warning. Such
-    solutions could be generated when solving a prize-collecting instance, and
-    typically indicate a scaling issue in the data.
-    """
-    cost_evaluator = CostEvaluator(20, 6, 0)
-    pop = Population(bpd)
-
-    with assert_warns(EmptySolutionWarning):
-        pop.add(Solution(prize_collecting, []), cost_evaluator)

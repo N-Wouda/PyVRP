@@ -54,7 +54,7 @@ def write_solution(where: Path, data: ProblemData, result: Result):
         # to assign the routes to the proper vehicle. We print all routes,
         # including empty ones. The route indices correspond to the vehicles.
         type2vehicle = [
-            (int(vehicle) - 1 for vehicle in vehicle_type.name.split(","))
+            (int(vehicle) for vehicle in vehicle_type.name.split(","))
             for vehicle_type in data.vehicle_types()
         ]
 
