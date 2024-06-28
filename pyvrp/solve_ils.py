@@ -194,7 +194,6 @@ def solve(
 
     max_runtime = stop.criteria[0]._max_runtime  # HACK
     accept = RecordToRecord(0.015, 0.00, max_runtime)  # type: ignore
-    # accept = MovingAverageThreshold(0.3, 50)
 
     neighbours = compute_neighbours(data, params.neighbourhood)
     nbhd = NeighbourhoodManager(data, neighbours)
