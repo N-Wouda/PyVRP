@@ -158,6 +158,7 @@ PYBIND11_MODULE(_pyvrp, m)
                       pyvrp::Cost,
                       pyvrp::Cost,
                       size_t,
+                      std::optional<size_t>,
                       char const *>(),
              py::arg("num_available") = 1,
              py::arg("capacity") = 0,
@@ -173,6 +174,7 @@ PYBIND11_MODULE(_pyvrp, m)
              py::arg("unit_distance_cost") = 1,
              py::arg("unit_duration_cost") = 0,
              py::arg("profile") = 0,
+             py::arg("reload_depot") = py::none(),
              py::kw_only(),
              py::arg("name") = "")
         .def_readonly("num_available", &ProblemData::VehicleType::numAvailable)
@@ -189,6 +191,7 @@ PYBIND11_MODULE(_pyvrp, m)
         .def_readonly("unit_duration_cost",
                       &ProblemData::VehicleType::unitDurationCost)
         .def_readonly("profile", &ProblemData::VehicleType::profile)
+        .def_readonly("reload_depot", &ProblemData::VehicleType::reloadDepot)
         .def_readonly("name",
                       &ProblemData::VehicleType::name,
                       py::return_value_policy::reference_internal)
@@ -309,6 +312,16 @@ PYBIND11_MODULE(_pyvrp, m)
              DOC(pyvrp, ProblemData, durationMatrix));
 
     py::class_<Route>(m, "Route", DOC(pyvrp, Route))
+        // An empty list matches both constructors, and pybind11 picks the
+        // first one that matches. We want that to be the constructor taking
+        // a list of trips (rather than a list of clients), so we define that
+        // one first.
+        .def(py::init<ProblemData const &,
+                      std::vector<std::vector<size_t>>,
+                      size_t>(),
+             py::arg("data"),
+             py::arg("visits"),
+             py::arg("vehicle_type"))
         .def(py::init<ProblemData const &, std::vector<size_t>, size_t>(),
              py::arg("data"),
              py::arg("visits"),
@@ -317,6 +330,16 @@ PYBIND11_MODULE(_pyvrp, m)
              &Route::visits,
              py::return_value_policy::reference_internal,
              DOC(pyvrp, Route, visits))
+        .def("trips",
+             &Route::trips,
+             py::return_value_policy::reference_internal,
+             DOC(pyvrp, Route, trips))
+        .def("trip",
+             &Route::trip,
+             py::arg("trip"),
+             py::return_value_policy::reference_internal,
+             DOC(pyvrp, Route, trip))
+        .def("num_trips", &Route::numTrips, DOC(pyvrp, Route, numTrips))
         .def("distance", &Route::distance, DOC(pyvrp, Route, distance))
         .def("distance_cost",
              &Route::distanceCost,
@@ -352,6 +375,8 @@ PYBIND11_MODULE(_pyvrp, m)
             "vehicle_type", &Route::vehicleType, DOC(pyvrp, Route, vehicleType))
         .def("start_depot", &Route::startDepot, DOC(pyvrp, Route, startDepot))
         .def("end_depot", &Route::endDepot, DOC(pyvrp, Route, endDepot))
+        .def(
+            "reload_depot", &Route::reloadDepot, DOC(pyvrp, Route, reloadDepot))
         .def("is_feasible", &Route::isFeasible, DOC(pyvrp, Route, isFeasible))
         .def("has_excess_load",
              &Route::hasExcessLoad,
@@ -383,7 +408,7 @@ PYBIND11_MODULE(_pyvrp, m)
         .def(py::pickle(
             [](Route const &route) {  // __getstate__
                 // Returns a tuple that completely encodes the route's state.
-                return py::make_tuple(route.visits(),
+                return py::make_tuple(route.trips(),
                                       route.distance(),
                                       route.distanceCost(),
                                       route.excessDistance(),
@@ -395,7 +420,6 @@ PYBIND11_MODULE(_pyvrp, m)
                                       route.timeWarp(),
                                       route.travelDuration(),
                                       route.serviceDuration(),
-                                      route.waitDuration(),
                                       route.releaseTime(),
                                       route.startTime(),
                                       route.slack(),
@@ -403,12 +427,13 @@ PYBIND11_MODULE(_pyvrp, m)
                                       route.centroid(),
                                       route.vehicleType(),
                                       route.startDepot(),
-                                      route.endDepot());
+                                      route.endDepot(),
+                                      route.reloadDepot());
             },
             [](py::tuple t) {  // __setstate__
                 Route route(
-                    t[0].cast<std::vector<size_t>>(),         // visits
-                    t[1].cast<pyvrp::Distance>(),             // distance
+                    t[0].cast<std::vector<std::vector<size_t>>>(),  // trips
+                    t[1].cast<pyvrp::Distance>(),                   // distance
                     t[2].cast<pyvrp::Cost>(),                 // distance cost
                     t[3].cast<pyvrp::Distance>(),             // excess distance
                     t[4].cast<pyvrp::Load>(),                 // delivery
@@ -419,15 +444,15 @@ PYBIND11_MODULE(_pyvrp, m)
                     t[9].cast<pyvrp::Duration>(),             // time warp
                     t[10].cast<pyvrp::Duration>(),            // travel
                     t[11].cast<pyvrp::Duration>(),            // service
-                    t[12].cast<pyvrp::Duration>(),            // wait
-                    t[13].cast<pyvrp::Duration>(),            // release
-                    t[14].cast<pyvrp::Duration>(),            // start time
-                    t[15].cast<pyvrp::Duration>(),            // slack
-                    t[16].cast<pyvrp::Cost>(),                // prizes
-                    t[17].cast<std::pair<double, double>>(),  // centroid
-                    t[18].cast<size_t>(),                     // vehicle type
-                    t[19].cast<size_t>(),                     // start depot
-                    t[20].cast<size_t>());                    // end depot
+                    t[12].cast<pyvrp::Duration>(),            // release
+                    t[13].cast<pyvrp::Duration>(),            // start time
+                    t[14].cast<pyvrp::Duration>(),            // slack
+                    t[15].cast<pyvrp::Cost>(),                // prizes
+                    t[16].cast<std::pair<double, double>>(),  // centroid
+                    t[17].cast<size_t>(),                     // vehicle type
+                    t[18].cast<size_t>(),                     // start depot
+                    t[19].cast<size_t>(),                     // end depot
+                    t[20].cast<std::optional<size_t>>());     // reload depot
 
                 return route;
             }))

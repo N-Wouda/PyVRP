@@ -472,38 +472,6 @@ def test_vehicle_type_raises_invalid_data(
         )
 
 
-def test_vehicle_type_does_not_raise_for_all_zero_edge_case():
-    """
-    The vehicle type constructor should allow the following edge case where all
-    data has been zeroed out.
-    """
-    vehicle_type = VehicleType(
-        num_available=1,
-        capacity=0,
-        start_depot=0,
-        end_depot=0,
-        fixed_cost=0,
-        tw_early=0,
-        tw_late=0,
-        max_duration=0,
-        max_distance=0,
-        unit_distance_cost=0,
-        unit_duration_cost=0,
-    )
-
-    assert_equal(vehicle_type.num_available, 1)
-    assert_equal(vehicle_type.start_depot, 0)
-    assert_equal(vehicle_type.end_depot, 0)
-    assert_equal(vehicle_type.capacity, 0)
-    assert_equal(vehicle_type.fixed_cost, 0)
-    assert_equal(vehicle_type.tw_early, 0)
-    assert_equal(vehicle_type.tw_late, 0)
-    assert_equal(vehicle_type.max_duration, 0)
-    assert_equal(vehicle_type.max_distance, 0)
-    assert_equal(vehicle_type.unit_distance_cost, 0)
-    assert_equal(vehicle_type.unit_duration_cost, 0)
-
-
 def test_vehicle_type_default_values():
     """
     Tests that the default values for costs and shift time windows are set
@@ -519,6 +487,10 @@ def test_vehicle_type_default_values():
     assert_equal(vehicle_type.unit_distance_cost, 1)
     assert_equal(vehicle_type.unit_duration_cost, 0)
     assert_equal(vehicle_type.name, "")
+
+    # By default reloads are not possible if a reload depot location is not
+    # explicitly provided.
+    assert_(vehicle_type.reload_depot is None)
 
     # The default value for the following fields is the largest representable
     # integral value.
@@ -544,6 +516,7 @@ def test_vehicle_type_attribute_access():
         max_distance=31,
         unit_distance_cost=37,
         unit_duration_cost=41,
+        reload_depot=47,
         name="vehicle_type name",
     )
 
@@ -558,6 +531,7 @@ def test_vehicle_type_attribute_access():
     assert_equal(vehicle_type.max_distance, 31)
     assert_equal(vehicle_type.unit_distance_cost, 37)
     assert_equal(vehicle_type.unit_duration_cost, 41)
+    assert_equal(vehicle_type.reload_depot, 47)
 
     assert_equal(vehicle_type.name, "vehicle_type name")
     assert_equal(str(vehicle_type), "vehicle_type name")

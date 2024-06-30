@@ -12,18 +12,59 @@
 namespace pyvrp
 {
 /**
- * Route(data: ProblemData, visits: list[int], vehicle_type: int)
+ * Route(
+ *     data: ProblemData,
+ *     visits: Union[list[int], list[list[int]]],
+ *     vehicle_type: int,
+ * )
  *
- * A simple class that stores the route plan and some statistics.
+ * A simple class that stores the client ``visits`` and some statistics. The
+ * client visits can be organised into multiple distinct trips, separated by a
+ * depot visit.
  */
 class Route
 {
     using Client = size_t;
     using Depot = size_t;
     using VehicleType = size_t;
-    using Visits = std::vector<Client>;
 
-    Visits visits_ = {};           // Client visits on this route
+    using Trip = std::vector<Client>;
+    using Trips = std::vector<Trip>;
+
+    /**
+     * Forward iterator through the clients visited by this route.
+     */
+    class Iterator
+    {
+        Trips const *trips = nullptr;
+        size_t trip = 0;   // trip index in trips
+        size_t visit = 0;  // visit index into trips[trip]
+
+        Iterator(Trips const &trips, size_t trip, size_t visit);
+
+    public:
+        using difference_type = std::ptrdiff_t;
+        using value_type = Client;
+
+        Iterator() = default;
+        Iterator(Iterator const &other) = default;
+        Iterator(Iterator &&other) = default;
+
+        Iterator &operator=(Iterator const &other) = default;
+        Iterator &operator=(Iterator &&other) = default;
+
+        static Iterator begin(Trips const &trips);
+        static Iterator end(Trips const &trips);
+
+        bool operator==(Iterator const &other) const;
+
+        Client operator*() const;
+
+        Iterator operator++(int);
+        Iterator &operator++();
+    };
+
+    Trips trips_;                  // Trips that make up this route
     Distance distance_ = 0;        // Total travel distance on this route
     Cost distanceCost_ = 0;        // Total cost of travel distance
     Distance excessDistance_ = 0;  // Excess travel distance
@@ -35,7 +76,6 @@ class Route
     Duration timeWarp_ = 0;        // Total time warp on this route
     Duration travel_ = 0;          // Total *travel* duration on this route
     Duration service_ = 0;         // Total *service* duration on this route
-    Duration wait_ = 0;            // Total *waiting* duration on this route
     Duration release_ = 0;         // Release time of this route
     Duration startTime_ = 0;       // (earliest) start time of this route
     Duration slack_ = 0;           // Total time slack on this route
@@ -45,6 +85,7 @@ class Route
     VehicleType vehicleType_;             // Type of vehicle
     Depot startDepot_;                    // Assigned start depot
     Depot endDepot_;                      // Assigned end depot
+    std::optional<Depot> reloadDepot_;    // Optionally assigned reload depot
 
 public:
     [[nodiscard]] bool empty() const;
@@ -56,13 +97,28 @@ public:
 
     [[nodiscard]] Client operator[](size_t idx) const;
 
-    Visits::const_iterator begin() const;
-    Visits::const_iterator end() const;
+    Iterator begin() const;
+    Iterator end() const;
 
     /**
      * Route visits, as a list of clients.
      */
-    [[nodiscard]] Visits const &visits() const;
+    [[nodiscard]] std::vector<Client> visits() const;
+
+    /**
+     * List of trips that constitute this route.
+     */
+    [[nodiscard]] Trips const &trips() const;
+
+    /**
+     * Returns the trip data of the given trip index.
+     */
+    [[nodiscard]] Trip const &trip(size_t trip) const;
+
+    /**
+     * Number of trips in this route.
+     */
+    [[nodiscard]] size_t numTrips() const;
 
     /**
      * Total distance travelled on this route.
@@ -143,7 +199,7 @@ public:
 
     /**
      * End time of the route. This is equivalent to
-     *  ``start_time + duration - time_warp``.
+     * ``start_time + duration - time_warp``.
      */
     [[nodiscard]] Duration endTime() const;
 
@@ -190,6 +246,11 @@ public:
     [[nodiscard]] Depot endDepot() const;
 
     /**
+     * Optional location index of the route's reload depot, if available.
+     */
+    [[nodiscard]] std::optional<Depot> reloadDepot() const;
+
+    /**
      * Returns whether this route is feasible.
      */
     [[nodiscard]] bool isFeasible() const;
@@ -214,12 +275,14 @@ public:
 
     Route() = delete;
 
-    Route(ProblemData const &data,
-          Visits visits,
-          VehicleType const vehicleType);
+    // Case where the visits are made in a single trip.
+    Route(ProblemData const &data, Trip visits, VehicleType vehicleType);
+
+    // Case where the visits are made over one or more trips.
+    Route(ProblemData const &data, Trips visits, VehicleType vehicleType);
 
     // This constructor does *no* validation. Useful when unserialising objects.
-    Route(Visits visits,
+    Route(Trips trips,
           Distance distance,
           Cost distanceCost,
           Distance excessDistance,
@@ -231,7 +294,6 @@ public:
           Duration timeWarp,
           Duration travel,
           Duration service,
-          Duration wait,
           Duration release,
           Duration startTime,
           Duration slack,
@@ -239,7 +301,8 @@ public:
           std::pair<double, double> centroid,
           VehicleType vehicleType,
           Depot startDepot,
-          Depot endDepot);
+          Depot endDepot,
+          std::optional<Depot> reloadDepot);
 };
 }  // namespace pyvrp
 

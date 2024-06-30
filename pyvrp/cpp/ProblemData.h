@@ -315,6 +315,7 @@ public:
      *     unit_distance_cost: int = 1,
      *     unit_duration_cost: int = 0,
      *     profile: int = 0,
+     *     reload_depot: Optional[int] = None,
      *     *,
      *     name: str = "",
      * )
@@ -354,6 +355,10 @@ public:
      *     type. Default 0.
      * profile
      *     This vehicle type's routing profile. Default 0, the first profile.
+     * reload_depot
+     *     Optional depot where the vehicle may reload along the route. This
+     *     enables multiple trips in a single route. Reloads are only allowed
+     *     when this argument is provided.
      * name
      *     Free-form name field for this vehicle type. Default empty.
      *
@@ -386,6 +391,10 @@ public:
      *     Cost per unit of duration on routes using vehicles of this type.
      * profile
      *     This vehicle type's routing profile.
+     * reload_depot
+     *     Optional depot where the vehicle may reload along the route. This
+     *     enables multiple trips in a single route. Reloads are only allowed
+     *     when this argument is provided.
      * name
      *     Free-form name field for this vehicle type.
      */
@@ -403,7 +412,8 @@ public:
         Cost const unitDistanceCost;  // Variable cost per unit of distance
         Cost const unitDurationCost;  // Variable cost per unit of duration
         size_t const profile;         // Distance and duration profile
-        char const *name;             // Type name (for reference)
+        std::optional<size_t> const reloadDepot;  // Reload depot location
+        char const *name;                         // Type name (for reference)
 
         VehicleType(size_t numAvailable = 1,
                     Load capacity = 0,
@@ -417,6 +427,7 @@ public:
                     Cost unitDistanceCost = 1,
                     Cost unitDurationCost = 0,
                     size_t profile = 0,
+                    std::optional<size_t> reloadDepot = std::nullopt,
                     char const *name = "");
 
         VehicleType(VehicleType const &vehicleType);

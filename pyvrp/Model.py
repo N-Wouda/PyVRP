@@ -323,6 +323,7 @@ class Model:
         unit_distance_cost: int = 1,
         unit_duration_cost: int = 0,
         profile: Optional[Profile] = None,
+        reload_depot: Optional[Depot] = None,
         *,
         name: str = "",
     ) -> VehicleType:
@@ -341,19 +342,18 @@ class Model:
             When the given ``depot`` or ``profile`` arguments are not in this
             model instance.
         """
-        if start_depot is None:
-            start_idx = 0
-        elif start_depot in self._depots:
-            start_idx = self._depots.index(start_depot)
-        else:
-            raise ValueError("The given start depot is not in this model.")
+        depots = [start_depot, end_depot, reload_depot]
+        depot_idcs = [0, 0, 0]
 
-        if end_depot is None:
-            end_idx = 0
-        elif end_depot in self._depots:
-            end_idx = self._depots.index(end_depot)
-        else:
-            raise ValueError("The given end depot is not in this model.")
+        for idx, depot in enumerate(depots):
+            if depot is None:
+                continue
+
+            if depot in self._depots:
+                depot_idcs[idx] = self._depots.index(depot)
+            else:
+                msg = f"The given depot {depot} is not in this model."
+                raise ValueError(msg)
 
         if profile is None:
             profile_idx = 0
@@ -365,8 +365,8 @@ class Model:
         vehicle_type = VehicleType(
             num_available=num_available,
             capacity=capacity,
-            start_depot=start_idx,
-            end_depot=end_idx,
+            start_depot=depot_idcs[0],
+            end_depot=depot_idcs[1],
             fixed_cost=fixed_cost,
             tw_early=tw_early,
             tw_late=tw_late,
@@ -375,6 +375,7 @@ class Model:
             unit_distance_cost=unit_distance_cost,
             unit_duration_cost=unit_duration_cost,
             profile=profile_idx,
+            reload_depot=depot_idcs[2],
             name=name,
         )
 

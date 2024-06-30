@@ -175,6 +175,7 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
                                       Cost unitDistanceCost,
                                       Cost unitDurationCost,
                                       size_t profile,
+                                      std::optional<size_t> reloadDepot,
                                       char const *name)
     : numAvailable(numAvailable),
       startDepot(startDepot),
@@ -188,6 +189,7 @@ ProblemData::VehicleType::VehicleType(size_t numAvailable,
       unitDistanceCost(unitDistanceCost),
       unitDurationCost(unitDurationCost),
       profile(profile),
+      reloadDepot(reloadDepot),
       name(duplicate(name))
 {
     if (numAvailable == 0)
@@ -231,6 +233,7 @@ ProblemData::VehicleType::VehicleType(VehicleType const &vehicleType)
       unitDistanceCost(vehicleType.unitDistanceCost),
       unitDurationCost(vehicleType.unitDurationCost),
       profile(vehicleType.profile),
+      reloadDepot(vehicleType.reloadDepot),
       name(duplicate(vehicleType.name))
 {
 }
@@ -248,6 +251,7 @@ ProblemData::VehicleType::VehicleType(VehicleType &&vehicleType)
       unitDistanceCost(vehicleType.unitDistanceCost),
       unitDurationCost(vehicleType.unitDurationCost),
       profile(vehicleType.profile),
+      reloadDepot(vehicleType.reloadDepot),
       name(vehicleType.name)  // we can steal
 {
     vehicleType.name = nullptr;  // stolen
