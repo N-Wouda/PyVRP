@@ -6,8 +6,12 @@ from typing import Optional
 import numpy as np
 from tqdm.contrib.concurrent import process_map
 
-from pyvrp import ProblemData, Result, SolveParams, solve
+from pyvrp import ProblemData, Result
 from pyvrp.read import ROUND_FUNCS, read
+from pyvrp.solve import SolveParams as SolveParamsHGS
+from pyvrp.solve import solve as solve_hgs
+from pyvrp.solve_ils import SolveParams as SolveParamsILS
+from pyvrp.solve_ils import solve as solve_ils
 from pyvrp.stop import (
     MaxIterations,
     MaxRuntime,
@@ -72,6 +76,7 @@ def _solve(
     max_iterations: int,
     no_improvement: int,
     per_client: bool,
+    algorithm: str,
     stats_dir: Optional[Path],
     sol_dir: Optional[Path],
     **kwargs,
@@ -96,6 +101,8 @@ def _solve(
         Maximum number of iterations without improvement.
     per_client
         Whether to scale stopping criteria values by the number of clients.
+    algorithm
+        Which algorithm to use. One of ['hgs', 'ils'],
     stats_dir
         The directory to write runtime statistics to.
     sol_dir
@@ -107,6 +114,8 @@ def _solve(
         A tuple containing the instance name, whether the solution is feasible,
         the solution cost, the number of iterations, and the runtime.
     """
+    SolveParams = SolveParamsHGS if algorithm == "hgs" else SolveParamsILS
+
     if kwargs.get("config_loc"):
         params = SolveParams.from_file(kwargs["config_loc"])
     else:
@@ -127,6 +136,7 @@ def _solve(
         ]
     )
 
+    solve = solve_hgs if algorithm == "hgs" else solve_ils
     result = solve(data, stop, seed, bool(stats_dir), params=params)
     instance_name = data_loc.stem
 
@@ -248,6 +258,15 @@ def main():
 
     msg = "Whether to scale stopping criteria values by the number of clients."
     stop.add_argument("--per_client", action="store_true")
+
+    msg = "Algorithm to use. One of ['hgs', 'ils']."
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        default="hgs",
+        choices=["hgs", "ils"],
+        help=msg,
+    )
 
     benchmark(**vars(parser.parse_args()))
 

@@ -1,5 +1,6 @@
 from typing import Type
 
+from .DestroyRepair import DestroyRepair as DestroyRepair
 from .LocalSearch import LocalSearch as LocalSearch
 from .SearchMethod import SearchMethod as SearchMethod
 from ._search import Exchange10 as Exchange10
@@ -16,6 +17,7 @@ from ._search import RouteOperator as RouteOperator
 from ._search import SwapRoutes as SwapRoutes
 from ._search import SwapStar as SwapStar
 from ._search import SwapTails as SwapTails
+from .neighbourhood import NeighbourhoodManager as NeighbourhoodManager
 from .neighbourhood import NeighbourhoodParams as NeighbourhoodParams
 from .neighbourhood import compute_neighbours as compute_neighbours
 
